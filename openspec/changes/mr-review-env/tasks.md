@@ -36,7 +36,6 @@
 - [ ] 6.3 实现 webhook 事件处理 — MR open 时发提示评论、merge/close 时清理容器、note 事件解析 /review-* 命令
 - [ ] 6.4 实现评论命令处理 — /review-start（启动+回写链接）、/review-stop（停止+回写确认）、/review-status（回写状态）
 
-## 7. 部署
+## 7. 文档
 
-- [ ] 7.1 编写 docker-compose.yml 用于部署 Review Service（挂载 /var/run/docker.sock）
-- [ ] 7.2 编写 README.md — 部署步骤、GitLab Webhook 配置、环境变量说明、使用方法
+- [ ] 7.1 编写 README.md — 本地启动方式（bun run start）、GitLab Webhook 配置、环境变量说明、使用方法
