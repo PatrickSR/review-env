@@ -51,20 +51,20 @@
 
 ## Phase 5. shadcn/ui 迁移（基于 dashboard-01 block）
 
-- [ ] 5.1 在 `packages/web` 中初始化 shadcn/ui：运行 `npx shadcn@latest init`，确认生成 `components.json`、`src/lib/utils.ts`（cn 工具函数）、CSS 变量主题系统，配置 `@/` path alias（tsconfig paths + vite resolve.alias）
+- [x] 5.1 在 `packages/web` 中初始化 shadcn/ui：运行 `npx shadcn@latest init`，确认生成 `components.json`、`src/lib/utils.ts`（cn 工具函数）、CSS 变量主题系统，配置 `@/` path alias（tsconfig paths + vite resolve.alias）
 
-- [ ] 5.2 安装 dashboard-01 block 及全部依赖：运行 `npx shadcn@latest add dashboard-01`，确认所有 shadcn 组件（sidebar、card、badge、table、button、input、label、select、checkbox、dropdown-menu、drawer、tabs、separator、chart、toggle-group、avatar、alert-dialog）和外部依赖（@tabler/icons-react、@tanstack/react-table、@dnd-kit/core、@dnd-kit/modifiers、@dnd-kit/sortable、@dnd-kit/utilities、recharts、sonner、zod）安装正确。清理组件中的 `"use client"` 指令（纯 Vite 项目不需要）
+- [x] 5.2 安装 dashboard-01 block 及全部依赖：运行 `npx shadcn@latest add dashboard-01`，确认所有 shadcn 组件（sidebar、card、badge、table、button、input、label、select、checkbox、dropdown-menu、drawer、tabs、separator、chart、toggle-group、avatar、alert-dialog）和外部依赖（@tabler/icons-react、@tanstack/react-table、@dnd-kit/core、@dnd-kit/modifiers、@dnd-kit/sortable、@dnd-kit/utilities、recharts、sonner、zod）安装正确。清理组件中的 `"use client"` 指令（纯 Vite 项目不需要）
 
-- [ ] 5.3 改造布局为 Sidebar 模式：用 dashboard-01 的 SidebarProvider + AppSidebar + SidebarInset + SiteHeader 替换现有的顶部导航栏 Layout。AppSidebar 的 navMain 配置为业务导航项（首页/项目管理/容器监控），使用 @tabler/icons-react 图标，导航使用 React Router 的 Link/useNavigate 替换 `<a href>`。NavDocuments 暂时隐藏，NavSecondary 和 NavUser 保留 dashboard-01 结构
+- [x] 5.3 改造布局为 Sidebar 模式：用 dashboard-01 的 SidebarProvider + AppSidebar + SidebarInset + SiteHeader 替换现有的顶部导航栏 Layout。AppSidebar 的 navMain 配置为业务导航项（首页/项目管理/容器监控），使用 @tabler/icons-react 图标，导航使用 React Router 的 Link/useNavigate 替换 `<a href>`。NavDocuments 暂时隐藏，NavSecondary 和 NavUser 保留 dashboard-01 结构
 
-- [ ] 5.4 改造首页统计面板：基于 dashboard-01 的 SectionCards 模式重写 Dashboard 页面，使用 Card + CardHeader + CardTitle + CardDescription + CardFooter + Badge 组件展示统计数据（活跃容器数、已配置项目数、最大容器限制）。ChartAreaInteractive 组件保留文件但在首页暂时不渲染
+- [x] 5.4 改造首页统计面板：基于 dashboard-01 的 SectionCards 模式重写 Dashboard 页面，使用 Card + CardHeader + CardTitle + CardDescription + CardFooter + Badge 组件展示统计数据（活跃容器数、已配置项目数、最大容器限制）。ChartAreaInteractive 组件保留文件但在首页暂时不渲染
 
-- [ ] 5.5 改造项目列表页：基于 dashboard-01 的 DataTable 模式重写 ProjectList 页面，使用 @tanstack/react-table + shadcn Table 组件。列定义：项目名称（可点击进入详情）、GitLab 路径、Project ID、操作（DropdownMenu）。添加项目改为 Drawer 表单（Input + Label + Button），删除确认改为 AlertDialog
+- [x] 5.5 改造项目列表页：基于 dashboard-01 的 DataTable 模式重写 ProjectList 页面，使用 @tanstack/react-table + shadcn Table 组件。列定义：项目名称（可点击进入详情）、GitLab 路径、Project ID、操作（DropdownMenu）。添加项目改为 Drawer 表单（Input + Label + Button），删除确认改为 AlertDialog
 
-- [ ] 5.6 改造项目详情页：项目配置区域使用 Card + 表单组件（Input + Label + Button）。镜像列表使用 DataTable 模式，列定义：显示名、标识、镜像地址、状态（Badge）、操作（DropdownMenu）。添加镜像改为 Drawer 表单，启用/禁用使用 Badge 切换，删除确认改为 AlertDialog
+- [x] 5.6 改造项目详情页：项目配置区域使用 Card + 表单组件（Input + Label + Button）。镜像列表使用 DataTable 模式，列定义：显示名、标识、镜像地址、状态（Badge）、操作（DropdownMenu）。添加镜像改为 Drawer 表单，启用/禁用使用 Badge 切换，删除确认改为 AlertDialog
 
-- [ ] 5.7 改造容器监控页：基于 DataTable 模式重写 Containers 页面，列定义：项目名称、MR 编号、使用的镜像、运行时长、操作。停止容器使用 AlertDialog 确认。保留 10 秒自动刷新逻辑
+- [x] 5.7 改造容器监控页：基于 DataTable 模式重写 Containers 页面，列定义：项目名称、MR 编号、使用的镜像、运行时长、操作。停止容器使用 AlertDialog 确认。保留 10 秒自动刷新逻辑
 
-- [ ] 5.8 清理与验证：删除所有不再使用的手写组件代码（旧的 Layout.tsx 中的顶部导航、手写 StatCard、手写 AddProjectForm、手写 AddImageForm 等内联组件）。确认 `npx turbo build` 构建通过，无 TypeScript 错误。确认所有页面功能正常：CRUD 操作、导航路由、响应式布局
+- [x] 5.8 清理与验证：删除所有不再使用的手写组件代码（旧的 Layout.tsx 中的顶部导航、手写 StatCard、手写 AddProjectForm、手写 AddImageForm 等内联组件）。确认 `npx turbo build` 构建通过，无 TypeScript 错误。确认所有页面功能正常：CRUD 操作、导航路由、响应式布局
 
 验证方式：所有页面使用 Sidebar 布局；无任何 `window.confirm()` 调用；无手写的 `<button className=...>` 或 `<input className=...>`（全部使用 shadcn 组件）；`npx turbo build` 构建成功；所有 CRUD 功能正常工作。

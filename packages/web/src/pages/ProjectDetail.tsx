@@ -1,69 +1,120 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react"
+import { useParams } from "react-router-dom"
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+} from "@tanstack/react-table"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { EllipsisVerticalIcon, PlusIcon, Trash2Icon, PencilIcon, SaveIcon, XIcon } from "lucide-react"
 
 interface Project {
-  id: number;
-  name: string;
-  gitlab_url: string;
-  gitlab_project_id: number;
-  project_path: string;
-  gitlab_pat: string;
-  webhook_secret: string;
-  git_user_name: string;
-  git_user_email: string;
+  id: number
+  name: string
+  gitlab_url: string
+  gitlab_project_id: number
+  project_path: string
+  gitlab_pat: string
+  webhook_secret: string
+  git_user_name: string
+  git_user_email: string
 }
 
 interface ProjectImage {
-  id: number;
-  name: string;
-  display_name: string;
-  image: string;
-  env_vars: string;
-  sort_order: number;
-  enabled: number;
+  id: number
+  name: string
+  display_name: string
+  image: string
+  env_vars: string
+  sort_order: number
+  enabled: number
 }
 
 export function ProjectDetail() {
-  const { id } = useParams();
-  const [project, setProject] = useState<Project | null>(null);
-  const [images, setImages] = useState<ProjectImage[]>([]);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<Partial<Project>>({});
-  const [showImageForm, setShowImageForm] = useState(false);
+  const { id } = useParams()
+  const [project, setProject] = useState<Project | null>(null)
+  const [images, setImages] = useState<ProjectImage[]>([])
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState<Partial<Project>>({})
 
   const load = () => {
-    fetch(`/api/projects/${id}`).then((r) => r.json()).then((p) => { setProject(p); setForm(p); });
-    fetch(`/api/projects/${id}/images`).then((r) => r.json()).then(setImages);
-  };
+    fetch(`/api/projects/${id}`).then((r) => r.json()).then((p) => { setProject(p); setForm(p) })
+    fetch(`/api/projects/${id}/images`).then((r) => r.json()).then(setImages)
+  }
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load() }, [id])
 
   const saveProject = async () => {
     await fetch(`/api/projects/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
-    });
-    setEditing(false);
-    load();
-  };
+    })
+    setEditing(false)
+    load()
+  }
 
   const toggleImage = async (img: ProjectImage) => {
     await fetch(`/api/projects/${id}/images/${img.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: img.enabled ? 0 : 1 }),
-    });
-    load();
-  };
+    })
+    load()
+  }
 
   const deleteImage = async (imgId: number) => {
-    if (!confirm("确定删除此镜像配置？")) return;
-    await fetch(`/api/projects/${id}/images/${imgId}`, { method: "DELETE" });
-    load();
-  };
-
-  if (!project) return <div className="text-gray-500">加载中...</div>;
+    await fetch(`/api/projects/${id}/images/${imgId}`, { method: "DELETE" })
+    load()
+  }
 
   const projectFields = [
     { key: "name", label: "名称" },
@@ -72,143 +123,252 @@ export function ProjectDetail() {
     { key: "webhook_secret", label: "Webhook Secret" },
     { key: "git_user_name", label: "Git 用户名" },
     { key: "git_user_email", label: "Git 邮箱" },
-  ];
+  ]
+
+  const imageColumns = useMemo<ColumnDef<ProjectImage>[]>(() => [
+    {
+      accessorKey: "display_name",
+      header: "显示名",
+    },
+    {
+      accessorKey: "name",
+      header: "标识",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.original.name}</span>
+      ),
+    },
+    {
+      accessorKey: "image",
+      header: "镜像地址",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-xs">{row.original.image}</span>
+      ),
+    },
+    {
+      accessorKey: "enabled",
+      header: "状态",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="cursor-pointer"
+          onClick={() => toggleImage(row.original)}
+        >
+          {row.original.enabled ? "已启用" : "已禁用"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon" className="size-8 text-muted-foreground" />}
+            >
+              <EllipsisVerticalIcon />
+              <span className="sr-only">操作</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem onClick={() => toggleImage(row.original)}>
+                {row.original.enabled ? "禁用" : "启用"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={<DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()} />}
+                >
+                  <Trash2Icon />
+                  删除
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>确定要删除此镜像配置？</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      删除镜像「{row.original.display_name}」后将无法恢复。此操作不可撤销。
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>取消</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteImage(row.original.id)}>
+                      删除
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ], [id])
+
+  const imageTable = useReactTable({
+    data: images,
+    columns: imageColumns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
+  if (!project) return <div className="text-muted-foreground px-4 lg:px-6">加载中...</div>
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">{project.name}</h1>
-
-      <section className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold">项目配置</h2>
+    <div className="flex flex-col gap-6 px-4 lg:px-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>{project.name}</CardTitle>
+            <CardDescription>GitLab Project ID: {project.gitlab_project_id}</CardDescription>
+          </div>
           {!editing ? (
-            <button onClick={() => setEditing(true)} className="text-blue-600 text-sm">编辑</button>
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <PencilIcon />
+              编辑
+            </Button>
           ) : (
             <div className="flex gap-2">
-              <button onClick={saveProject} className="bg-blue-600 text-white px-3 py-1 rounded text-sm">保存</button>
-              <button onClick={() => { setEditing(false); setForm(project); }} className="text-gray-600 text-sm">取消</button>
+              <Button size="sm" onClick={saveProject}>
+                <SaveIcon />
+                保存
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setEditing(false); setForm(project) }}>
+                <XIcon />
+                取消
+              </Button>
             </div>
           )}
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div><span className="text-gray-500">GitLab Project ID:</span> {project.gitlab_project_id}</div>
-          {projectFields.map((f) => (
-            <label key={f.key} className="block">
-              <span className="text-gray-500 text-xs">{f.label}</span>
-              {editing ? (
-                <input
-                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm mt-1"
-                  value={(form as any)[f.key] || ""}
-                  onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                />
-              ) : (
-                <div className="mt-1">{(project as any)[f.key]}</div>
-              )}
-            </label>
-          ))}
-        </div>
-      </section>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            {projectFields.map((f) => (
+              <div key={f.key} className="flex flex-col gap-2">
+                <Label htmlFor={`proj-${f.key}`}>{f.label}</Label>
+                {editing ? (
+                  <Input
+                    id={`proj-${f.key}`}
+                    value={(form as any)[f.key] || ""}
+                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{(project as any)[f.key]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      <section className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold">镜像配置</h2>
-          <button
-            onClick={() => setShowImageForm(!showImageForm)}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
-          >
-            添加镜像
-          </button>
-        </div>
-
-        {showImageForm && (
-          <AddImageForm projectId={Number(id)} onDone={() => { setShowImageForm(false); load(); }} />
-        )}
-
-        {images.length === 0 ? (
-          <div className="text-gray-500 text-sm py-4 text-center">暂无镜像配置</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left p-2">显示名</th>
-                <th className="text-left p-2">标识</th>
-                <th className="text-left p-2">镜像</th>
-                <th className="text-center p-2">状态</th>
-                <th className="text-right p-2">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {images.map((img) => (
-                <tr key={img.id} className="border-b last:border-0">
-                  <td className="p-2">{img.display_name}</td>
-                  <td className="p-2 text-gray-600">{img.name}</td>
-                  <td className="p-2 text-gray-600 text-xs">{img.image}</td>
-                  <td className="p-2 text-center">
-                    <button onClick={() => toggleImage(img)} className={`text-xs px-2 py-0.5 rounded ${img.enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {img.enabled ? "已启用" : "已禁用"}
-                    </button>
-                  </td>
-                  <td className="p-2 text-right">
-                    <button onClick={() => deleteImage(img.id)} className="text-red-600 text-xs">删除</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>镜像配置</CardTitle>
+            <CardDescription>管理该项目可用的开发环境镜像</CardDescription>
+          </div>
+          <AddImageDrawer projectId={Number(id)} onDone={load} />
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader className="bg-muted">
+                {imageTable.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {imageTable.getRowModel().rows?.length ? (
+                  imageTable.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={imageColumns.length} className="h-24 text-center">
+                      暂无镜像配置
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
 
-function AddImageForm({ projectId, onDone }: { projectId: number; onDone: () => void }) {
-  const [form, setForm] = useState({ name: "", display_name: "", image: "", env_vars: "{}" });
-  const [error, setError] = useState("");
+function AddImageDrawer({ projectId, onDone }: { projectId: number; onDone: () => void }) {
+  const isMobile = useIsMobile()
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ name: "", display_name: "", image: "", env_vars: "{}" })
+  const [error, setError] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    setError("")
     const res = await fetch(`/api/projects/${projectId}/images`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
-    });
+    })
     if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "创建失败");
-      return;
+      const data = await res.json()
+      setError(data.error || "创建失败")
+      return
     }
-    onDone();
-  };
+    setOpen(false)
+    setForm({ name: "", display_name: "", image: "", env_vars: "{}" })
+    onDone()
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-gray-200 rounded p-3 mb-3">
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block">
-          <span className="text-xs text-gray-600">标识名 *</span>
-          <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        </label>
-        <label className="block">
-          <span className="text-xs text-gray-600">显示名 *</span>
-          <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.display_name}
-            onChange={(e) => setForm({ ...form, display_name: e.target.value })} required />
-        </label>
-        <label className="block">
-          <span className="text-xs text-gray-600">Docker 镜像 *</span>
-          <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.image}
-            onChange={(e) => setForm({ ...form, image: e.target.value })} required />
-        </label>
-        <label className="block">
-          <span className="text-xs text-gray-600">环境变量 (JSON)</span>
-          <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.env_vars}
-            onChange={(e) => setForm({ ...form, env_vars: e.target.value })} />
-        </label>
-      </div>
-      {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
-      <div className="flex gap-2 mt-2">
-        <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded text-sm">创建</button>
-        <button type="button" onClick={onDone} className="text-gray-600 text-sm">取消</button>
-      </div>
-    </form>
-  );
+    <Drawer direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button variant="outline" size="sm">
+          <PlusIcon />
+          添加镜像
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent>
+        <DrawerHeader className="gap-1">
+          <DrawerTitle>添加镜像</DrawerTitle>
+          <DrawerDescription>为项目添加新的开发环境镜像配置</DrawerDescription>
+        </DrawerHeader>
+        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="img-name">标识名 *</Label>
+              <Input id="img-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="img-display">显示名 *</Label>
+              <Input id="img-display" value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Label htmlFor="img-image">Docker 镜像 *</Label>
+            <Input id="img-image" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Label htmlFor="img-env">环境变量 (JSON)</Label>
+            <Input id="img-env" value={form.env_vars} onChange={(e) => setForm({ ...form, env_vars: e.target.value })} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DrawerFooter>
+          <Button onClick={handleSubmit}>创建</Button>
+          <DrawerClose asChild>
+            <Button variant="outline">取消</Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  )
 }
