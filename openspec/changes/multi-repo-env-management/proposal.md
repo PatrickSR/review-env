@@ -12,7 +12,8 @@
 - **砍掉评论命令系统**：移除 `/review-start`、`/review-stop`、`/review-status` 评论命令，容器生命周期完全由 Web 驱动
 - **BREAKING**: URL 从 `/mr/:id` 变为 `/mr/:projectId/:mrIid`
 - **BREAKING**: 配置从 .env 单仓库模式迁移到 SQLite 动态管理
-- **管理界面 (SPA)**：使用 React + shadcn + Vite 构建管理后台，支持项目 CRUD、镜像配置、容器监控
+- **管理界面 (SPA)**：使用 React + shadcn/ui + Vite 构建管理后台，基于 shadcn dashboard-01 block 模板，采用 Sidebar 布局，支持项目 CRUD、镜像配置、容器监控
+- **shadcn/ui 迁移**：将 Phase 4 中手写的裸 Tailwind CSS 组件全部迁移为 shadcn/ui 标准组件，严格遵循 shadcn 的组件使用方式，禁止自定义替代组件
 
 ## 功能 (Capabilities)
 
@@ -20,7 +21,7 @@
 - `multi-repo`: 支持动态管理多个 GitLab 仓库，每个项目独立配置（PAT、Webhook Secret、Git 用户信息）
 - `multi-image`: 每个项目可配置多个 AI 工具镜像，用户在终端页面选择后启动对应容器，切换时销毁重建
 - `sqlite-persistence`: 使用 SQLite 持久化项目、镜像和容器状态，替代内存 Map
-- `admin-spa`: React + shadcn 管理界面，提供项目管理、镜像配置、容器监控功能
+- `admin-spa`: React + shadcn/ui 管理界面，基于 dashboard-01 block 模板，Sidebar 布局，提供项目管理、镜像配置、容器监控功能。严格使用 shadcn/ui 组件（Button、Card、Table、Input、Label、Badge、AlertDialog、Drawer、DropdownMenu、Select、Tabs 等），不允许手写替代组件
 - `monorepo-infra`: Turborepo monorepo 基础设施，拆分 server 和 web 两个包
 
 ### 修改功能
@@ -34,6 +35,6 @@
 - **API 路由**：所有现有路由增加 projectId 维度，新增 `/api/*` 管理 API
 - **配置**：.env 中移除单仓库相关配置（GITLAB_PROJECT_ID、GITLAB_PROJECT_PATH 等），保留全局配置（PORT、MAX_CONTAINERS 等）
 - **前端**：terminal.html 重构为带工具选择的交互页面，新增 SPA 管理界面
-- **依赖**：新增 better-sqlite3、React、shadcn/ui、Vite、Turborepo
+- **依赖**：新增 better-sqlite3、React、shadcn/ui（含 Radix UI 原语）、@tabler/icons-react、@tanstack/react-table、recharts、@dnd-kit、sonner、zod、Vite、Turborepo
 - **Docker**：Dockerfile 需适配 monorepo 构建，docker-compose.yml 需挂载 SQLite 数据卷
 - **部署**：需要数据库迁移步骤，现有单仓库部署需要通过管理界面重新配置项目

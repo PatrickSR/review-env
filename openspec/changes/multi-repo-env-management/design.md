@@ -172,10 +172,40 @@ Webhook 只处理：
 
 管理界面 SPA：
 - React + TypeScript
-- shadcn/ui 组件库
+- shadcn/ui 组件库（严格使用，不允许手写替代组件）
+- 基于 shadcn dashboard-01 block 模板
+- Sidebar 布局（SidebarProvider + AppSidebar + SidebarInset）
+- @tabler/icons-react 图标库（dashboard-01 默认）
+- @tanstack/react-table 表格引擎
+- @dnd-kit 拖拽排序
+- recharts 图表
+- sonner toast 通知
+- zod 数据校验
 - Vite 构建
 - React Router 客户端路由
 - fetch 调用后端 API
+
+dashboard-01 组件保留策略：
+- `app-sidebar.tsx` — 保留，导航项改为：首页、项目管理、容器监控
+- `site-header.tsx` — 保留，标题改为动态页面标题
+- `section-cards.tsx` — 保留，用于首页统计卡片（活跃容器/项目数/最大限制）
+- `chart-area-interactive.tsx` — 保留组件文件，首页暂时隐藏（后续可用于容器使用趋势）
+- `data-table.tsx` — 保留完整模式，用于项目列表、镜像列表、容器列表
+- `nav-main.tsx` — 保留，配置业务导航项，使用 React Router Link
+- `nav-documents.tsx` — 保留组件文件，暂时隐藏（无文档导航需求）
+- `nav-secondary.tsx` — 保留（Settings/Help）
+- `nav-user.tsx` — 保留结构，数据改为 Review Env 管理员
+
+shadcn/ui 组件使用规范：
+- 所有按钮必须使用 `<Button>` 组件
+- 所有输入框必须使用 `<Input>` + `<Label>` 组件
+- 所有卡片容器必须使用 `<Card>` 系列组件
+- 所有表格必须使用 `<Table>` 系列组件或基于 @tanstack/react-table 的 DataTable 模式
+- 所有确认弹窗必须使用 `<AlertDialog>`，禁止使用 `window.confirm()`
+- 所有下拉菜单必须使用 `<DropdownMenu>` 组件
+- 所有表单详情/编辑面板使用 `<Drawer>` 组件（与 dashboard-01 的 TableCellViewer 模式一致）
+- 状态标签使用 `<Badge>` 组件
+- 选择器使用 `<Select>` 组件
 
 终端页面：
 - 从静态 HTML 升级为带工具选择的交互页面
