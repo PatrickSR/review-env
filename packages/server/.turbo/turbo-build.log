@@ -1,0 +1,6 @@
+
+
+> build
+> tsc --outDir dist --noEmit false
+
+⠙[1G[0K

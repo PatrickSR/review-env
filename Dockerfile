@@ -2,13 +2,21 @@ FROM node:22-slim AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Copy root workspace config
+COPY package.json package-lock.json turbo.json ./
+
+# Copy package manifests
+COPY packages/web/package.json ./packages/web/
+COPY packages/server/package.json ./packages/server/
+
 RUN npm ci
 
-COPY tsconfig.json ./
-COPY src/ ./src/
+# Copy source code
+COPY packages/web/ ./packages/web/
+COPY packages/server/ ./packages/server/
 
-RUN npx tsc --outDir dist --noEmit false
+# Build web first (SPA static files), then server
+RUN npx turbo build
 
 # --- Production ---
 FROM node:22-slim
@@ -16,10 +24,17 @@ FROM node:22-slim
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+COPY packages/server/package.json ./packages/server/
+RUN npm ci --omit=dev -w packages/server
 
-COPY --from=build /app/dist ./dist
-COPY public/ ./public/
+# Copy server build output
+COPY --from=build /app/packages/server/dist ./packages/server/dist
+COPY --from=build /app/packages/server/public ./packages/server/public
+
+# Copy web build output (SPA static files)
+COPY --from=build /app/packages/web/dist ./packages/web/dist
+
+WORKDIR /app/packages/server
 
 EXPOSE 3000
 

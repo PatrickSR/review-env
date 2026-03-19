@@ -1,0 +1,24 @@
+{
+  "name": "@review-env/server",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "npx tsx src/server.ts",
+    "build": "tsc --outDir dist --noEmit false",
+    "dev": "npx tsx --watch src/server.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "dockerode": "^4.0.4",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/dockerode": "^3.3.34",
+    "@types/express": "^5.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

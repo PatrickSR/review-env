@@ -1,20 +1,15 @@
 {
   "name": "review-env",
-  "type": "module",
   "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "start": "npx tsx src/server.ts"
-  },
-  "dependencies": {
-    "dockerode": "^4.0.4",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "http-proxy-middleware": "^3.0.3"
+    "dev": "turbo dev --filter=@review-env/server",
+    "build": "turbo build"
   },
   "devDependencies": {
-    "@types/dockerode": "^3.3.34",
-    "@types/express": "^5.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "turbo": "^2.4.0"
   }
 }
