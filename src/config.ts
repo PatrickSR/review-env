@@ -10,6 +10,13 @@ function optional(key: string, fallback: string): string {
   return process.env[key] || fallback;
 }
 
+function parseAppPorts(value: string): number[] {
+  return value
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => !isNaN(n) && n > 0);
+}
+
 export const config = {
   // GitLab
   gitlabUrl: required("GITLAB_URL"),
@@ -26,9 +33,7 @@ export const config = {
   containerTimeoutHours: Number(optional("CONTAINER_TIMEOUT_HOURS", "4")),
 
   // Container
-  appPort: Number(optional("APP_PORT", "7702")),
-  previewPortBase: Number(optional("PREVIEW_PORT_BASE", "9000")),
-  ttydPortBase: Number(optional("TTYD_PORT_BASE", "7000")),
+  appPorts: parseAppPorts(optional("APP_PORTS", "7702")),
   reviewImage: optional("REVIEW_IMAGE", "review-env:latest"),
   containerCpuLimit: Number(optional("CONTAINER_CPU_LIMIT", "2")),
   containerMemoryLimit: optional("CONTAINER_MEMORY_LIMIT", "4g"),

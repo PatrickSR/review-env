@@ -1,0 +1,12 @@
+node_modules
+.env
+.env.*
+.git
+.gitignore
+docker
+openspec
+.kiro
+.cursor
+.vscode
+*.md
+.DS_Store

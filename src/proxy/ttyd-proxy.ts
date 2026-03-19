@@ -2,7 +2,6 @@ import type { Express } from "express";
 import type { Server } from "node:http";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { dockerManager } from "../services/docker-manager.js";
-import { portAllocator } from "../services/port-allocator.js";
 
 function extractMrIid(url: string): number | null {
   const match = url.match(/^\/mr\/(\d+)\/terminal/);
@@ -12,24 +11,23 @@ function extractMrIid(url: string): number | null {
 function getTarget(mrIid: number): string | null {
   const info = dockerManager.getInfo(mrIid);
   if (!info) return null;
-  const ttydPort = portAllocator.getTtydPort(info.slot);
-  return `http://127.0.0.1:${ttydPort}`;
+  return `http://review-env-mr-${mrIid}:7681`;
 }
 
 export function setupTtydProxy(app: Express, server: Server): void {
+  const fallback = "http://127.0.0.1:7000";
+
   const proxy = createProxyMiddleware({
-    // Default target (overridden by router)
-    target: "http://127.0.0.1:7000",
+    target: fallback,
     changeOrigin: true,
     ws: true,
     router: (req) => {
       const url = req.url || (req as any).originalUrl || "";
       const mrIid = extractMrIid(url);
-      if (!mrIid) return "http://127.0.0.1:7000";
-      return getTarget(mrIid) || "http://127.0.0.1:7000";
+      if (!mrIid) return fallback;
+      return getTarget(mrIid) || fallback;
     },
     pathRewrite: (path) => {
-      // Strip /mr/:id/terminal prefix
       const match = path.match(/^\/mr\/\d+\/terminal(\/.*)?$/);
       return match?.[1] || "/";
     },
@@ -43,7 +41,6 @@ export function setupTtydProxy(app: Express, server: Server): void {
     },
   });
 
-  // HTTP requests
   app.use("/mr/:id/terminal", (req, _res, next) => {
     const mrIid = Number(req.params.id);
     const info = dockerManager.getInfo(mrIid);
@@ -54,7 +51,6 @@ export function setupTtydProxy(app: Express, server: Server): void {
     next();
   }, proxy);
 
-  // WebSocket upgrade
   server.on("upgrade", (req, socket, head) => {
     const url = req.url || "";
     if (url.match(/^\/mr\/\d+\/terminal/)) {

@@ -5,7 +5,6 @@ import { config } from "./config.js";
 import { dockerManager } from "./services/docker-manager.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { terminalRouter } from "./routes/terminal.js";
-import { previewRouter } from "./routes/preview.js";
 import { setupTtydProxy } from "./proxy/ttyd-proxy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,4 +33,3 @@ const server = app.listen(config.port, () => {
 
 // Setup proxies (needs server instance for WebSocket upgrade)
 setupTtydProxy(app, server);
-app.use(previewRouter);

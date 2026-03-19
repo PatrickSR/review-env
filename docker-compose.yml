@@ -1,0 +1,21 @@
+services:
+  review-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
+    networks:
+      - review-net
+    env_file:
+      - .env
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    restart: unless-stopped
+
+networks:
+  review-net:
+    name: review-net
+    driver: bridge

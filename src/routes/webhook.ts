@@ -9,8 +9,15 @@ function getServiceUrl(): string {
   return `http://localhost:${config.port}`;
 }
 
+function formatPortsInfo(ports: Record<number, number>): string {
+  const entries = Object.entries(ports);
+  if (entries.length === 0) return "（端口映射暂不可用）";
+  return entries
+    .map(([container, host]) => `  - 容器端口 ${container} → 宿主机端口 ${host}`)
+    .join("\n");
+}
+
 webhookRouter.post("/webhook", async (req, res) => {
-  // Verify token
   const token = req.headers["x-gitlab-token"];
   if (token !== config.webhookSecret) {
     res.status(401).send("Unauthorized");
@@ -46,12 +53,11 @@ async function handleMergeRequestEvent(body: any): Promise<void> {
       "🚀 **Review Environment 可用**",
       "",
       `- 终端：${baseUrl}/mr/${mrIid}`,
-      `- 预览：${baseUrl}/mr/${mrIid}/preview/`,
       "",
       "**可用命令：**",
       "- `/review-start` — 启动 review 环境",
       "- `/review-stop` — 停止 review 环境",
-      "- `/review-status` — 查看环境状态",
+      "- `/review-status` — 查看环境状态和端口映射",
     ].join("\n");
     await gitlabApi.postComment(projectId, mrIid, comment);
   } else if (action === "merge" || action === "close") {
@@ -92,11 +98,14 @@ async function handleReviewStart(projectId: number, mrIid: number, branch?: stri
 
   const existing = dockerManager.getInfo(mrIid);
   if (existing) {
-    await gitlabApi.postComment(
-      projectId,
-      mrIid,
-      `✅ Review 环境已在运行中\n\n- 终端：${baseUrl}/mr/${mrIid}\n- 预览：${baseUrl}/mr/${mrIid}/preview/`
-    );
+    const comment = [
+      "✅ Review 环境已在运行中",
+      "",
+      `- 终端：${baseUrl}/mr/${mrIid}`,
+      "- 端口映射：",
+      formatPortsInfo(existing.ports),
+    ].join("\n");
+    await gitlabApi.postComment(projectId, mrIid, comment);
     return;
   }
 
@@ -106,19 +115,17 @@ async function handleReviewStart(projectId: number, mrIid: number, branch?: stri
       branch = mrInfo.source_branch;
     }
 
-    await dockerManager.createContainer(mrIid, branch);
+    const info = await dockerManager.createContainer(mrIid, branch);
 
-    await gitlabApi.postComment(
-      projectId,
-      mrIid,
-      [
-        "🚀 Review 环境已启动",
-        "",
-        `- 终端：${baseUrl}/mr/${mrIid}`,
-        `- 预览：${baseUrl}/mr/${mrIid}/preview/`,
-        `- 超时：${config.containerTimeoutHours} 小时后自动销毁`,
-      ].join("\n")
-    );
+    const comment = [
+      "🚀 Review 环境已启动",
+      "",
+      `- 终端：${baseUrl}/mr/${mrIid}`,
+      "- 端口映射：",
+      formatPortsInfo(info.ports),
+      `- 超时：${config.containerTimeoutHours} 小时后自动销毁`,
+    ].join("\n");
+    await gitlabApi.postComment(projectId, mrIid, comment);
   } catch (err: any) {
     await gitlabApi.postComment(projectId, mrIid, `❌ 启动失败：${err.message}`);
   }
@@ -149,7 +156,10 @@ async function handleReviewStatus(projectId: number, mrIid: number): Promise<voi
   let comment = `📊 Review 环境状态：**${label}**`;
 
   if (status.status === "ready") {
-    comment += `\n\n- 终端：${baseUrl}/mr/${mrIid}\n- 预览：${baseUrl}/mr/${mrIid}/preview/`;
+    comment += `\n\n- 终端：${baseUrl}/mr/${mrIid}`;
+    if (status.ports) {
+      comment += "\n- 端口映射：\n" + formatPortsInfo(status.ports);
+    }
   }
   if (status.message) {
     comment += `\n\n详情：${status.message}`;

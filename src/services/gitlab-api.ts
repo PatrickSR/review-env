@@ -22,6 +22,6 @@ export const gitlabApi = {
     if (!res.ok) {
       throw new Error(`Failed to get MR info: ${res.status}`);
     }
-    return res.json();
+    return res.json() as Promise<{ source_branch: string; state: string; title: string }>;
   },
 };
