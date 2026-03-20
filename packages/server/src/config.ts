@@ -29,4 +29,7 @@ export const config = {
   // Container resource limits
   containerCpuLimit: Number(optional("CONTAINER_CPU_LIMIT", "2")),
   containerMemoryLimit: optional("CONTAINER_MEMORY_LIMIT", "4g"),
+
+  // Docker host IP for port-mapped proxy (use host.docker.internal when running in container)
+  dockerHostIp: optional("DOCKER_HOST_IP", "127.0.0.1"),
 } as const;

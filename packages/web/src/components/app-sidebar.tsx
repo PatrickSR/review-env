@@ -15,6 +15,7 @@ import {
   FolderIcon,
   ContainerIcon,
   TerminalSquareIcon,
+  BoxIcon,
 } from "lucide-react"
 
 const data = {
@@ -28,6 +29,11 @@ const data = {
       title: "项目管理",
       url: "/projects",
       icon: <FolderIcon />,
+    },
+    {
+      title: "镜像管理",
+      url: "/images",
+      icon: <BoxIcon />,
     },
     {
       title: "容器监控",

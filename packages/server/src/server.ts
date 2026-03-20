@@ -1,4 +1,5 @@
 import express from "express";
+import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
@@ -7,6 +8,7 @@ import { dockerManager } from "./services/docker-manager.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { terminalRouter } from "./routes/terminal.js";
 import { apiRouter } from "./routes/api.js";
+import { dockerRouter } from "./routes/docker.js";
 import { setupTtydProxy } from "./proxy/ttyd-proxy.js";
 import { createLogger } from "./utils/logger.js";
 
@@ -14,6 +16,7 @@ const log = createLogger("server");
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+const server = http.createServer(app);
 
 // Initialize database
 getDb();
@@ -24,11 +27,17 @@ app.use("/webhook", express.json());
 
 // API routes need JSON body
 app.use("/api", express.json());
+app.use("/api/docker", express.json());
 
 // Routes
 app.use(webhookRouter);
 app.use(terminalRouter);
 app.use("/api", apiRouter);
+
+// Setup ttyd proxies BEFORE dockerRouter so /api/docker/test/:id/terminal is matched first
+setupTtydProxy(app, server);
+
+app.use("/api/docker", dockerRouter);
 
 // Static files (terminal.html)
 app.use("/public", express.static(path.join(__dirname, "../public")));
@@ -50,9 +59,6 @@ try {
 // Periodic cleanup (every 60s)
 setInterval(() => dockerManager.cleanupExpired(), 60_000);
 
-const server = app.listen(config.port, () => {
+server.listen(config.port, () => {
   log.info(`Review Service running on http://localhost:${config.port}`);
 });
-
-// Setup proxies (needs server instance for WebSocket upgrade)
-setupTtydProxy(app, server);

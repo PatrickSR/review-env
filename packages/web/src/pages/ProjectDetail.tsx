@@ -308,15 +308,39 @@ export function ProjectDetail() {
 function AddImageDrawer({ projectId, onDone }: { projectId: number; onDone: () => void }) {
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: "", display_name: "", image: "", env_vars: "{}" })
+  const [form, setForm] = useState({ name: "", display_name: "", image: "" })
+  const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([])
   const [error, setError] = useState("")
+  const [dockerImages, setDockerImages] = useState<{ name: string; tag: string }[]>([])
+  const [imageSearch, setImageSearch] = useState("")
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      fetch("/api/docker/images").then((r) => r.json()).then((imgs: any[]) => {
+        setDockerImages(imgs.map((i: any) => ({ name: i.name, tag: i.tag })))
+      })
+    }
+  }, [open])
+
+  const filteredImages = dockerImages.filter((img) => {
+    const full = `${img.name}:${img.tag}`
+    return full.toLowerCase().includes(imageSearch.toLowerCase())
+  })
 
   const handleSubmit = async () => {
     setError("")
+    const envObj: Record<string, string> = {}
+    for (const { key, value } of envVars) {
+      if (key.trim()) envObj[key.trim()] = value
+    }
     const res = await fetch(`/api/projects/${projectId}/images`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        env_vars: JSON.stringify(envObj),
+      }),
     })
     if (!res.ok) {
       const data = await res.json()
@@ -324,7 +348,8 @@ function AddImageDrawer({ projectId, onDone }: { projectId: number; onDone: () =
       return
     }
     setOpen(false)
-    setForm({ name: "", display_name: "", image: "", env_vars: "{}" })
+    setForm({ name: "", display_name: "", image: "" })
+    setEnvVars([])
     onDone()
   }
 
@@ -352,13 +377,81 @@ function AddImageDrawer({ projectId, onDone }: { projectId: number; onDone: () =
               <Input id="img-display" value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
             </div>
           </div>
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="img-image">Docker 镜像 *</Label>
-            <Input id="img-image" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+          <div className="flex flex-col gap-3 relative">
+            <Label>Docker 镜像 *</Label>
+            <Input
+              value={form.image}
+              placeholder="搜索或选择镜像..."
+              onChange={(e) => {
+                setForm({ ...form, image: e.target.value })
+                setImageSearch(e.target.value)
+                setShowDropdown(true)
+              }}
+              onFocus={() => { setImageSearch(form.image); setShowDropdown(true) }}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+            />
+            {showDropdown && filteredImages.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
+                {filteredImages.map((img, i) => (
+                  <div
+                    key={i}
+                    className="cursor-pointer px-3 py-2 text-sm hover:bg-accent"
+                    onMouseDown={() => {
+                      setForm({ ...form, image: `${img.name}:${img.tag}` })
+                      setShowDropdown(false)
+                    }}
+                  >
+                    {img.name}:{img.tag}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-3">
-            <Label htmlFor="img-env">环境变量 (JSON)</Label>
-            <Input id="img-env" value={form.env_vars} onChange={(e) => setForm({ ...form, env_vars: e.target.value })} />
+            <Label>环境变量</Label>
+            <div className="flex flex-col gap-2">
+              {envVars.map((env, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Input
+                    placeholder="变量名"
+                    value={env.key}
+                    onChange={(e) => {
+                      const next = [...envVars]
+                      next[i] = { ...next[i]!, key: e.target.value }
+                      setEnvVars(next)
+                    }}
+                    className="flex-1"
+                  />
+                  <Input
+                    placeholder="值"
+                    value={env.value}
+                    onChange={(e) => {
+                      const next = [...envVars]
+                      next[i] = { ...next[i]!, value: e.target.value }
+                      setEnvVars(next)
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 text-muted-foreground"
+                    onClick={() => setEnvVars(envVars.filter((_, j) => j !== i))}
+                  >
+                    <XIcon className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => setEnvVars([...envVars, { key: "", value: "" }])}
+              >
+                <PlusIcon className="size-4 mr-1" />
+                添加变量
+              </Button>
+            </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
