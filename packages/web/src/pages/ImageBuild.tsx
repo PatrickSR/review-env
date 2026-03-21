@@ -74,10 +74,10 @@ export function ImageBuild() {
         const lines = buffer.split("\n")
         buffer = lines.pop() || ""
 
+        let currentEvent = ""
         for (const line of lines) {
           if (line.startsWith("event: ")) {
-            const event = line.slice(7)
-            // Next line should be data
+            currentEvent = line.slice(7)
             continue
           }
           if (line.startsWith("data: ")) {
@@ -86,12 +86,15 @@ export function ImageBuild() {
               if (data.message) {
                 setLogs((prev) => [...prev, data.message])
               }
+              if (currentEvent === "error") setBuildState("error")
+              if (currentEvent === "complete") setBuildState("success")
             } catch { /* ignore parse errors */ }
+            currentEvent = ""
           }
         }
       }
 
-      // Check last event type from logs
+      // If stream ended without explicit complete/error event, assume success
       setBuildState((prev) => prev === "building" ? "success" : prev)
     } catch {
       setBuildState("error")
