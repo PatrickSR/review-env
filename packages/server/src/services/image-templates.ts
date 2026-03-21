@@ -33,7 +33,7 @@ REPO_URL="\${GITLAB_URL}/\${PROJECT_PATH}.git"
 if ! git clone --depth 1 --single-branch -b "\$BRANCH" "\$REPO_URL" /workspace 2>&1; then
   echo "error: clone failed" > "\$STATUS_FILE"
   echo "Clone failed, starting ttyd for debugging"
-  ttyd -p 7681 -w /workspace /bin/bash &
+  ttyd -W -p 7681 -w /workspace /bin/bash &
   exec sleep infinity
 fi
 
@@ -42,7 +42,7 @@ cd /workspace
 echo "ready" > "\$STATUS_FILE"
 echo "Environment ready, starting ttyd"
 
-ttyd -p 7681 -w /workspace /bin/bash &
+ttyd -W -p 7681 -w /workspace /bin/bash &
 
 exec sleep infinity
 `;

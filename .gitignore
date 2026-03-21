@@ -38,3 +38,4 @@ data/
 
 
 .turbo/cache/
+turbo-build.log
