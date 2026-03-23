@@ -51,7 +51,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { EllipsisVerticalIcon, PlusIcon, Trash2Icon, PencilIcon, SaveIcon, XIcon } from "lucide-react"
@@ -84,6 +83,7 @@ export function ProjectDetail() {
   const [images, setImages] = useState<ProjectImage[]>([])
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<Partial<Project>>({})
+  const [deleteTarget, setDeleteTarget] = useState<ProjectImage | null>(null)
 
   const load = () => {
     fetch(`/api/projects/${id}`).then((r) => r.json()).then((p) => { setProject(p); setForm(p) })
@@ -173,28 +173,10 @@ export function ProjectDetail() {
                 {row.original.enabled ? "禁用" : "启用"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={<DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()} />}
-                >
-                  <Trash2Icon />
-                  删除
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>确定要删除此镜像配置？</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      删除镜像「{row.original.display_name}」后将无法恢复。此操作不可撤销。
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => deleteImage(row.original.id)}>
-                      删除
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(row.original)}>
+                <Trash2Icon />
+                删除
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -301,6 +283,23 @@ export function ProjectDetail() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确定要删除此镜像配置？</AlertDialogTitle>
+            <AlertDialogDescription>
+              删除镜像「{deleteTarget?.display_name}」后将无法恢复。此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteTarget) { deleteImage(deleteTarget.id); setDeleteTarget(null) } }}>
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
