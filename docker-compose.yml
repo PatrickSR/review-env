@@ -14,7 +14,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - DOCKER_HOST_IP=host.docker.internal
     ports:
-      - "${PORT:-3000}:${PORT:-3000}"
+      - "${PORT:-3333}:${PORT:-3333}"
     restart: unless-stopped
 
 networks:

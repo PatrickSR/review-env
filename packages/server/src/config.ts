@@ -22,7 +22,7 @@ export const config = {
   gitlabUrl: optional("GITLAB_URL", "https://gitlab.internal"),
 
   // Service
-  port: Number(optional("PORT", "3000")),
+  port: Number(optional("PORT", "3333")),
   maxContainers: Number(optional("MAX_CONTAINERS", "20")),
   containerTimeoutHours: Number(optional("CONTAINER_TIMEOUT_HOURS", "4")),
 

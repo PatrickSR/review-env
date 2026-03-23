@@ -29,10 +29,13 @@ export function setupTtydProxy(app: Express, server: Server): void {
     target: fallback,
     changeOrigin: true,
     router: (req) => {
-      const url = req.url || (req as any).originalUrl || "";
+      const url = (req as any).originalUrl || req.url || "";
       const ids = extractIds(url);
+      console.log("[DEBUG proxy] router url:", url, "ids:", ids, "req.url:", req.url, "req.originalUrl:", (req as any).originalUrl);
       if (!ids) return fallback;
-      return getTarget(ids.projectId, ids.mrIid) || fallback;
+      const target = getTarget(ids.projectId, ids.mrIid) || fallback;
+      console.log("[DEBUG proxy] target:", target);
+      return target;
     },
     pathRewrite: (path) => {
       const match = path.match(/^\/mr\/\d+\/\d+\/terminal(\/.*)?$/);
