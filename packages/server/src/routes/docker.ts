@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Docker from "dockerode";
 import { createLogger } from "../utils/logger.js";
+import { testContainersDb } from "../db/test-containers.js";
 
 const log = createLogger("docker-api");
 const docker = new Docker();
@@ -231,43 +232,15 @@ function createTarStream(files: Record<string, string>): Readable {
 }
 
 
-// --- Test containers (in-memory tracking) ---
+// --- Test containers ---
 
 const NETWORK_NAME = "review-net";
-const TEST_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-
-interface TestContainer {
-  containerId: string;
-  containerName: string;
-  hostPort: number;
-  image: string;
-  createdAt: number;
-  timer: ReturnType<typeof setTimeout>;
-}
-
-const testContainers = new Map<string, TestContainer>();
 
 async function ensureNetwork(): Promise<void> {
   const networks = await docker.listNetworks({ filters: { name: [NETWORK_NAME] } });
   const exists = networks.some((n) => n.Name === NETWORK_NAME);
   if (!exists) {
     await docker.createNetwork({ Name: NETWORK_NAME, Driver: "bridge" });
-  }
-}
-
-async function cleanupTestContainer(containerId: string): Promise<void> {
-  const entry = testContainers.get(containerId);
-  if (entry) {
-    clearTimeout(entry.timer);
-    testContainers.delete(containerId);
-  }
-  try {
-    const container = docker.getContainer(containerId);
-    await container.stop().catch(() => {});
-    await container.remove({ force: true });
-    log.info(`Test container cleaned up: ${containerId.slice(0, 12)}`);
-  } catch {
-    // container may already be gone
   }
 }
 
@@ -282,6 +255,41 @@ dockerRouter.post("/test", async (req, res) => {
   try {
     await ensureNetwork();
 
+    const existing = testContainersDb.getOne();
+
+    if (existing) {
+      if (existing.image === image) {
+        // Same image — check if Docker container is alive
+        try {
+          const container = docker.getContainer(existing.container_id);
+          await container.inspect();
+          // Alive — reuse and refresh last_accessed_at
+          testContainersDb.updateLastAccessed(existing.id);
+          log.info(`Reusing test container: ${existing.container_name} (image: ${image})`);
+          res.json({
+            containerId: existing.container_id,
+            containerName: existing.container_name,
+            image: existing.image,
+          });
+          return;
+        } catch {
+          // Dead — clean up DB record and create new
+          testContainersDb.delete(existing.id);
+          log.info(`Test container dead, cleaning up: ${existing.container_id.slice(0, 12)}`);
+        }
+      } else {
+        // Different image — destroy old container first
+        try {
+          const container = docker.getContainer(existing.container_id);
+          await container.stop().catch(() => {});
+          await container.remove({ force: true });
+        } catch { /* container may already be gone */ }
+        testContainersDb.delete(existing.id);
+        log.info(`Replaced test container (old image: ${existing.image}, new: ${image})`);
+      }
+    }
+
+    // Create new test container
     const containerName = `review-test-${Date.now()}`;
 
     const container = await docker.createContainer({
@@ -309,16 +317,11 @@ dockerRouter.post("/test", async (req, res) => {
       return;
     }
 
-    // Auto-cleanup timer
-    const timer = setTimeout(() => cleanupTestContainer(containerId), TEST_TIMEOUT_MS);
-
-    testContainers.set(containerId, {
-      containerId,
-      containerName,
-      hostPort: Number(hostPort),
+    testContainersDb.create({
+      container_id: containerId,
+      container_name: containerName,
       image,
-      createdAt: Date.now(),
-      timer,
+      host_port: Number(hostPort),
     });
 
     log.info(`Test container started: ${containerName} (image: ${image})`);
@@ -340,7 +343,13 @@ dockerRouter.delete("/test/:containerId", async (req, res) => {
   const { containerId } = req.params;
 
   try {
-    await cleanupTestContainer(containerId);
+    try {
+      const container = docker.getContainer(containerId);
+      await container.stop().catch(() => {});
+      await container.remove({ force: true });
+    } catch { /* container may already be gone */ }
+    testContainersDb.deleteByContainerId(containerId);
+    log.info(`Test container cleaned up: ${containerId.slice(0, 12)}`);
     res.json({ success: true });
   } catch (err: any) {
     log.error("Failed to stop test container", err);
@@ -351,14 +360,13 @@ dockerRouter.delete("/test/:containerId", async (req, res) => {
 // --- List test containers ---
 
 dockerRouter.get("/test", (_req, res) => {
-  const result = Array.from(testContainers.values()).map((tc) => ({
-    containerId: tc.containerId,
+  const records = testContainersDb.getAll();
+  const result = records.map((tc) => ({
+    containerId: tc.container_id,
     image: tc.image,
-    createdAt: tc.createdAt,
+    createdAt: tc.created_at,
   }));
   res.json(result);
 });
 
 
-// Export for proxy setup
-export { testContainers };

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { projectsDb } from "../db/projects.js";
 import { projectImagesDb } from "../db/project-images.js";
 import { containersDb } from "../db/containers.js";
+import { testContainersDb } from "../db/test-containers.js";
 import { dockerManager } from "../services/docker-manager.js";
 import { config } from "../config.js";
 import { createLogger } from "../utils/logger.js";
@@ -192,13 +193,28 @@ apiRouter.get("/containers", (_req, res) => {
     const image = projectImagesDb.getById(c.image_id);
     return {
       ...c,
+      type: "review" as const,
       project_name: project?.name,
       gitlab_project_id: project?.gitlab_project_id,
       image_display_name: image?.display_name,
       ports: JSON.parse(c.ports || "{}"),
     };
   });
-  res.json(enriched);
+
+  // Add test containers
+  const testContainers = testContainersDb.getAll().map((tc) => ({
+    id: tc.id,
+    container_id: tc.container_id,
+    type: "test" as const,
+    project_name: null,
+    gitlab_project_id: null,
+    mr_iid: null,
+    image_display_name: tc.image,
+    created_at: tc.created_at,
+    ports: {},
+  }));
+
+  res.json([...enriched, ...testContainers]);
 });
 
 apiRouter.delete("/containers/:id", async (req, res) => {

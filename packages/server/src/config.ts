@@ -32,4 +32,7 @@ export const config = {
 
   // Docker host IP for port-mapped proxy (use host.docker.internal when running in container)
   dockerHostIp: optional("DOCKER_HOST_IP", "127.0.0.1"),
+
+  // Test container timeout
+  testContainerTimeoutMinutes: Number(optional("TEST_CONTAINER_TIMEOUT_MINUTES", "30")),
 } as const;

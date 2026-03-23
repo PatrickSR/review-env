@@ -29,9 +29,11 @@ import { SquareIcon } from "lucide-react"
 
 interface Container {
   id: number
-  project_name: string
-  gitlab_project_id: number
-  mr_iid: number
+  container_id?: string
+  type: "review" | "test"
+  project_name: string | null
+  gitlab_project_id: number | null
+  mr_iid: number | null
   image_display_name: string
   created_at: number
   ports: Record<number, number>
@@ -58,21 +60,35 @@ export function Containers() {
     return () => clearInterval(t)
   }, [])
 
-  const handleStop = async (id: number) => {
-    await fetch(`/api/containers/${id}`, { method: "DELETE" })
+  const handleStop = async (container: Container) => {
+    if (container.type === "test") {
+      await fetch(`/api/docker/test/${container.container_id}`, { method: "DELETE" })
+    } else {
+      await fetch(`/api/containers/${container.id}`, { method: "DELETE" })
+    }
     load()
   }
 
   const columns = useMemo<ColumnDef<Container>[]>(() => [
     {
+      accessorKey: "type",
+      header: "类型",
+      cell: ({ row }) => (
+        <span className={row.original.type === "test" ? "text-orange-500" : "text-blue-500"}>
+          {row.original.type === "test" ? "测试" : "Review"}
+        </span>
+      ),
+    },
+    {
       accessorKey: "project_name",
       header: "项目",
-      cell: ({ row }) => row.original.project_name || "Unknown",
+      cell: ({ row }) => row.original.project_name || "-",
     },
     {
       accessorKey: "mr_iid",
       header: "MR",
-      cell: ({ row }) => `#${row.original.mr_iid}`,
+      cell: ({ row }) =>
+        row.original.type === "test" ? "镜像测试" : `#${row.original.mr_iid}`,
     },
     {
       accessorKey: "image_display_name",
@@ -103,12 +119,14 @@ export function Containers() {
               <AlertDialogHeader>
                 <AlertDialogTitle>确定要停止此容器？</AlertDialogTitle>
                 <AlertDialogDescription>
-                  停止项目「{row.original.project_name}」的 MR #{row.original.mr_iid} 容器后，用户将无法继续使用该开发环境。
+                  {row.original.type === "test"
+                    ? "停止此测试容器后，镜像测试环境将不可用。"
+                    : `停止项目「${row.original.project_name}」的 MR #${row.original.mr_iid} 容器后，用户将无法继续使用该开发环境。`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleStop(row.original.id)}>
+                <AlertDialogAction onClick={() => handleStop(row.original)}>
                   停止
                 </AlertDialogAction>
               </AlertDialogFooter>

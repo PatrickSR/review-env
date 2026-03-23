@@ -4,7 +4,7 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 import httpProxy from "http-proxy";
 import { projectsDb } from "../db/projects.js";
 import { containersDb } from "../db/containers.js";
-import { testContainers } from "../routes/docker.js";
+import { testContainersDb } from "../db/test-containers.js";
 import { config } from "../config.js";
 
 function extractIds(url: string): { projectId: number; mrIid: number } | null {
@@ -73,9 +73,10 @@ export function setupTtydProxy(app: Express, server: Server): void {
       const match = url.match(/\/api\/docker\/test\/([^/]+)\/terminal/);
       if (!match) return fallback;
       const containerId = match[1];
-      const entry = testContainers.get(containerId!);
+      const records = testContainersDb.getAll();
+      const entry = records.find((r) => r.container_id === containerId);
       if (!entry) return fallback;
-      return `http://${config.dockerHostIp}:${entry.hostPort}`;
+      return `http://${config.dockerHostIp}:${entry.host_port}`;
     },
     pathRewrite: (_path, req) => {
       const original = (req as any).originalUrl || _path;
@@ -94,7 +95,9 @@ export function setupTtydProxy(app: Express, server: Server): void {
 
   app.use("/api/docker/test/:containerId/terminal", (req, _res, next) => {
     const { containerId } = req.params;
-    if (!testContainers.has(containerId)) {
+    const records = testContainersDb.getAll();
+    const entry = records.find((r) => r.container_id === containerId);
+    if (!entry) {
       _res.status(404).send("Test container not found");
       return;
     }
@@ -124,9 +127,10 @@ export function setupTtydProxy(app: Express, server: Server): void {
     } else if (url.match(/^\/api\/docker\/test\/[^/]+\/terminal/)) {
       const match = url.match(/\/api\/docker\/test\/([^/]+)\/terminal/);
       if (!match) { socket.destroy(); return; }
-      const entry = testContainers.get(match[1]!);
+      const records = testContainersDb.getAll();
+      const entry = records.find((r) => r.container_id === match[1]);
       if (!entry) { socket.destroy(); return; }
-      const target = `http://${config.dockerHostIp}:${entry.hostPort}`;
+      const target = `http://${config.dockerHostIp}:${entry.host_port}`;
       // Rewrite path: /api/docker/test/<id>/terminal/ws -> /ws
       const subPath = url.replace(/^\/api\/docker\/test\/[^/]+\/terminal/, "") || "/";
       req.url = subPath;

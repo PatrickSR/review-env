@@ -1,6 +1,7 @@
 import Docker from "dockerode";
 import { config } from "../config.js";
 import { containersDb } from "../db/containers.js";
+import { testContainersDb } from "../db/test-containers.js";
 import { projectImagesDb, type ProjectImage } from "../db/project-images.js";
 import { type Project } from "../db/projects.js";
 import { createLogger } from "../utils/logger.js";
@@ -237,7 +238,21 @@ export const dockerManager = {
       }
     }
 
-    log.info(`State recovery: ${records.length} records, ${cleaned} cleaned`);
+    // Recover test containers
+    const testRecords = testContainersDb.getAll();
+    let testCleaned = 0;
+
+    for (const record of testRecords) {
+      try {
+        const container = docker.getContainer(record.container_id);
+        await container.inspect();
+      } catch {
+        testContainersDb.delete(record.id);
+        testCleaned++;
+      }
+    }
+
+    log.info(`State recovery: ${records.length} review records (${cleaned} cleaned), ${testRecords.length} test records (${testCleaned} cleaned)`);
   },
 
   async cleanupExpired(): Promise<void> {
@@ -247,6 +262,20 @@ export const dockerManager = {
     for (const record of expired) {
       log.info(`Cleaning up expired container id=${record.id} for MR ${record.mr_iid}`);
       await this.stopContainerById(record.id);
+    }
+
+    // Cleanup expired test containers
+    const testTimeoutSeconds = config.testContainerTimeoutMinutes * 60;
+    const expiredTest = testContainersDb.getExpired(testTimeoutSeconds);
+
+    for (const record of expiredTest) {
+      log.info(`Cleaning up expired test container id=${record.id} (image: ${record.image})`);
+      try {
+        const container = docker.getContainer(record.container_id);
+        await container.stop().catch(() => {});
+        await container.remove({ force: true });
+      } catch { /* container may already be gone */ }
+      testContainersDb.delete(record.id);
     }
   },
 };

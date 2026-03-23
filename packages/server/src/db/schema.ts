@@ -38,5 +38,15 @@ export function createTables(db: Database.Database): void {
       created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
       UNIQUE(project_id, mr_iid)
     );
+
+    CREATE TABLE IF NOT EXISTS test_containers (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      container_id    TEXT NOT NULL,
+      container_name  TEXT NOT NULL,
+      image           TEXT NOT NULL,
+      host_port       INTEGER NOT NULL,
+      created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
+      last_accessed_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
   `);
 }
