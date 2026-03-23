@@ -119,7 +119,7 @@ export function ProjectDetail() {
 
   const projectFields = [
     { key: "name", label: "名称" },
-    { key: "project_path", label: "项目路径" },
+    { key: "project_path", label: "项目路径（自动获取）", readOnly: true },
     { key: "gitlab_pat", label: "GitLab PAT" },
     { key: "webhook_secret", label: "Webhook Secret" },
     { key: "git_user_name", label: "Git 用户名" },
@@ -229,7 +229,7 @@ export function ProjectDetail() {
             {projectFields.map((f) => (
               <div key={f.key} className="flex flex-col gap-2">
                 <Label htmlFor={`proj-${f.key}`}>{f.label}</Label>
-                {editing ? (
+                {editing && !("readOnly" in f && f.readOnly) ? (
                   <Input
                     id={`proj-${f.key}`}
                     value={(form as any)[f.key] || ""}

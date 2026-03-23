@@ -202,7 +202,6 @@ function AddProjectDrawer({ onDone }: { onDone: () => void }) {
   const [form, setForm] = useState({
     name: "",
     gitlab_project_id: "",
-    project_path: "",
     gitlab_pat: "",
     webhook_secret: "",
     git_user_name: "",
@@ -226,7 +225,7 @@ function AddProjectDrawer({ onDone }: { onDone: () => void }) {
       return
     }
     setOpen(false)
-    setForm({ name: "", gitlab_project_id: "", project_path: "", gitlab_pat: "", webhook_secret: "", git_user_name: "", git_user_email: "" })
+    setForm({ name: "", gitlab_project_id: "", gitlab_pat: "", webhook_secret: "", git_user_name: "", git_user_email: "" })
     onDone()
   }
 
@@ -248,15 +247,9 @@ function AddProjectDrawer({ onDone }: { onDone: () => void }) {
             <Label htmlFor="add-name">名称 *</Label>
             <Input id="add-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
               <Label htmlFor="add-project-id">GitLab Project ID *</Label>
               <Input id="add-project-id" type="number" value={form.gitlab_project_id} onChange={(e) => setForm({ ...form, gitlab_project_id: e.target.value })} />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="add-path">项目路径 *</Label>
-              <Input id="add-path" value={form.project_path} onChange={(e) => setForm({ ...form, project_path: e.target.value })} />
-            </div>
           </div>
           <div className="flex flex-col gap-3">
             <Label htmlFor="add-pat">GitLab PAT</Label>

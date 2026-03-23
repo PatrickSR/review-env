@@ -4,6 +4,7 @@ import { projectImagesDb } from "../db/project-images.js";
 import { containersDb } from "../db/containers.js";
 import { testContainersDb } from "../db/test-containers.js";
 import { dockerManager } from "../services/docker-manager.js";
+import { gitlabApi } from "../services/gitlab-api.js";
 import { config } from "../config.js";
 import { createLogger } from "../utils/logger.js";
 
@@ -36,10 +37,10 @@ apiRouter.get("/projects", (_req, res) => {
   res.json(projects);
 });
 
-apiRouter.post("/projects", (req, res) => {
-  const { name, gitlab_project_id, project_path, gitlab_pat, webhook_secret, git_user_name, git_user_email } = req.body;
-  if (!name || !gitlab_project_id || !project_path || !gitlab_pat || !webhook_secret) {
-    res.status(400).json({ error: "缺少必填字段：名称、GitLab 项目 ID、项目路径、GitLab PAT、Webhook Secret" });
+apiRouter.post("/projects", async (req, res) => {
+  const { name, gitlab_project_id, gitlab_pat, webhook_secret, git_user_name, git_user_email } = req.body;
+  if (!name || !gitlab_project_id || !gitlab_pat || !webhook_secret) {
+    res.status(400).json({ error: "缺少必填字段：名称、GitLab 项目 ID、GitLab PAT、Webhook Secret" });
     return;
   }
 
@@ -49,12 +50,22 @@ apiRouter.post("/projects", (req, res) => {
     return;
   }
 
+  // 通过 GitLab API 自动获取 project_path
+  let projectPath: string;
+  try {
+    const info = await gitlabApi.getProjectInfo(config.gitlabUrl, gitlab_pat, gitlab_project_id);
+    projectPath = info.path_with_namespace;
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   try {
     const project = projectsDb.create({
       name,
       gitlab_url: config.gitlabUrl,
       gitlab_project_id,
-      project_path,
+      project_path: projectPath,
       gitlab_pat,
       webhook_secret,
       git_user_name: git_user_name || "review-bot",
