@@ -46,7 +46,7 @@
 
 **替代方案**：保持 Drawer，仅新增编辑功能。
 
-**理由**：用户明确要求改为 Modal 形式。Dialog 组件需要通过 `bunx shadcn@latest add dialog` 安装。
+**理由**：用户明确要求改为 Modal 形式。Dialog 组件需要通过 `npx shadcn@latest add dialog` 安装。
 
 ### 5. 数据库迁移策略
 

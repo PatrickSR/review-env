@@ -11,7 +11,7 @@
 
 ## 3. 前端 — Dialog 组件安装
 
-- [ ] 3.1 运行 `bunx shadcn@latest add dialog` 安装 shadcn Dialog 组件到 `packages/web/src/components/ui/dialog.tsx`
+- [ ] 3.1 运行 `npx shadcn@latest add dialog` 安装 shadcn Dialog 组件到 `packages/web/src/components/ui/dialog.tsx`
 
 ## 4. 前端 — 镜像管理 UI 重构
 
