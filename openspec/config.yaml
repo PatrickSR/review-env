@@ -1,20 +1,58 @@
 schema: spec-driven
 
-# 项目上下文（可选）
-# 在创建工件时向 AI 显示此信息。
-# 添加您的技术栈、约定、风格指南、领域知识等。
-# 示例：
-#   context: |
-#     技术栈：TypeScript, React, Node.js
-#     我们使用约定式提交
-#     领域：电商平台
+context: |
+  领域：MR 临时开发环境服务（Review Environment Service）
+  为 GitLab MR 自动创建/销毁临时开发容器，Reviewer 通过 URL 即可进入终端、预览应用、交互追问。
 
-# 每个工件的规则（可选）
-# 为特定工件添加自定义规则。
-# 示例：
-#   rules:
-#     proposal:
-#       - 保持提案在500字以内
-#       - 始终包含"非目标"部分
-#     tasks:
-#       - 将任务分解为最多2小时的块
+  架构：npm workspaces monorepo + Turborepo
+    - packages/server — Express + TypeScript 后端（Node 22, ESM）
+    - packages/web — React 19 SPA 管理后台（Vite 6, TypeScript）
+
+  后端技术栈：
+    - Express 4, TypeScript 5, ESM (type: module, NodeNext)
+    - better-sqlite3 本地数据库
+    - dockerode 管理 Docker 容器生命周期
+    - http-proxy-middleware 代理 ttyd 终端
+    - GitLab API 集成（Webhook + REST）
+
+  前端技术栈：
+    - React 19 + React Router 7
+    - Tailwind CSS 4 + shadcn/ui (base-nova 风格)
+    - Vite 6 构建，路径别名 @/ → src/
+    - SPA 挂载在 /admin 路径下
+    - Recharts 图表, @tanstack/react-table 表格, @dnd-kit 拖拽
+    - zod 数据校验, sonner toast 通知
+
+  数据模型：
+    - projects — GitLab 项目配置（PAT、webhook secret 等）
+    - project_images — 项目关联的 Docker 镜像模板
+    - containers — MR 关联的运行容器
+    - test_containers — 临时测试容器
+
+  部署：
+    - Docker 多阶段构建（node:22-slim）
+    - docker-compose 编排，挂载 Docker socket
+    - SQLite 数据持久化到 ./data 目录
+
+  约定：
+    - 使用中文编写文档和注释
+    - 服务端代码放 packages/server/src/，按 routes/services/db/utils 分层
+    - 前端代码放 packages/web/src/，按 pages/components/hooks/lib 组织
+    - API 路由前缀 /api，Docker 相关 /api/docker
+    - Webhook 路由 /webhook，终端路由 /mr/:iid
+
+rules:
+  proposal:
+    - 使用中文编写
+    - 保持提案简洁，500字以内
+    - 始终包含"非目标"部分
+  design:
+    - 使用中文编写
+    - 明确标注影响的 package（server/web）
+    - 数据模型变更需包含 SQL schema
+    - API 变更需包含路由和请求/响应格式
+  tasks:
+    - 使用中文编写
+    - 将任务分解为最多2小时的块
+    - 后端和前端任务分开列出
+    - 包含必要的测试任务
