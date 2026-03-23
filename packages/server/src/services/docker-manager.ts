@@ -96,9 +96,11 @@ export const dockerManager = {
       ...Object.entries(extraEnvVars).map(([k, v]) => `${k}=${v}`),
     ];
 
-    // ttyd (7681) is NOT mapped to host
+    // ttyd (7681) mapped to random host port
     const exposedPorts: Record<string, object> = { "7681/tcp": {} };
-    const portBindings: Record<string, object[]> = {};
+    const portBindings: Record<string, object[]> = {
+      "7681/tcp": [{ HostPort: "0" }],
+    };
 
     const container = await docker.createContainer({
       Image: imageConfig.image,

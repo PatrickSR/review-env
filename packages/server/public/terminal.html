@@ -148,7 +148,7 @@
         const data = await res.json();
 
         if (data.status === 'ready') {
-          showTerminal();
+          showTerminal(data.ports);
           return;
         }
         if (data.status === 'error') {
@@ -175,11 +175,16 @@
       errorText.textContent = msg;
     }
 
-    function showTerminal() {
+    function showTerminal(ports) {
       loadingEl.style.display = 'none';
       toolSelectEl.style.display = 'none';
       frameEl.style.display = 'block';
-      frameEl.src = `${basePath}/terminal/`;
+      const ttydPort = ports && ports[7681];
+      if (ttydPort) {
+        frameEl.src = `http://${location.hostname}:${ttydPort}/`;
+      } else {
+        showError('无法获取 ttyd 端口映射');
+      }
     }
 
     function showToolSelect() {
