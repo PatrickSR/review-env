@@ -78,8 +78,10 @@
 - **那么** 页面必须使用 Badge 或 Switch 组件展示状态，调用 API 更新 enabled 字段
 
 #### 场景:删除镜像
-- **当** 用户点击删除镜像
-- **那么** 页面必须弹出 AlertDialog 确认
+- **当** 用户点击 DropdownMenu 中的"删除"菜单项
+- **那么** 页面必须弹出独立的 AlertDialog 确认弹窗（不嵌套在 DropdownMenuContent 内部）
+- **并且** AlertDialog 必须通过组件 state 控制开关，禁止嵌套在 DropdownMenu 的 Portal 内
+- **并且** 确认后调用 `DELETE /api/projects/:id/images/:imageId` 删除镜像并刷新列表
 
 ### 需求:容器监控页面
 管理界面必须提供运行中容器的查看和管理功能。
