@@ -1,6 +1,8 @@
+import { useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { usePageTitle } from "@/contexts/page-title"
 
 const pageTitles: Record<string, string> = {
   "/": "概览",
@@ -10,10 +12,19 @@ const pageTitles: Record<string, string> = {
 
 export function SiteHeader() {
   const location = useLocation()
+  const { title: pageTitle, setTitle } = usePageTitle()
 
-  const title =
+  // 路由切换时清空动态 title
+  useEffect(() => {
+    setTitle("")
+  }, [location.pathname, setTitle])
+
+  const staticTitle =
     pageTitles[location.pathname] ||
-    (location.pathname.startsWith("/projects/") ? "项目详情" : "Review Env")
+    (location.pathname.startsWith("/projects/") ? "项目详情" : null) ||
+    (location.pathname.startsWith("/images") ? "镜像管理" : null)
+
+  const title = pageTitle || staticTitle || "Review Env"
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">

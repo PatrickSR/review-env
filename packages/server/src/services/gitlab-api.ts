@@ -70,4 +70,43 @@ export const gitlabApi = {
     const data = (await res.json()) as { path_with_namespace: string };
     return { path_with_namespace: data.path_with_namespace };
   },
+
+  /** 获取项目的 open 状态 MR 列表 */
+  async listOpenMrs(
+    project: GitlabProjectConfig
+  ): Promise<
+    { iid: number; title: string; source_branch: string; author: string; web_url: string }[]
+  > {
+    const url = `${project.gitlab_url}/api/v4/projects/${project.gitlab_project_id}/merge_requests?state=opened&per_page=100`;
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: { "PRIVATE-TOKEN": project.gitlab_pat },
+      });
+    } catch (err) {
+      log.error(`Failed to connect to GitLab: ${err}`);
+      throw new Error("无法连接 GitLab 服务");
+    }
+
+    if (!res.ok) {
+      log.error(`Failed to list MRs: ${res.status}`);
+      throw new Error("无法获取 MR 列表，请检查 GitLab 配置");
+    }
+
+    const data = (await res.json()) as {
+      iid: number;
+      title: string;
+      source_branch: string;
+      author: { username: string };
+      web_url: string;
+    }[];
+
+    return data.map((mr) => ({
+      iid: mr.iid,
+      title: mr.title,
+      source_branch: mr.source_branch,
+      author: mr.author.username,
+      web_url: mr.web_url,
+    }));
+  },
 };

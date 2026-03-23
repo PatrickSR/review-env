@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   flexRender,
@@ -43,7 +43,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { EllipsisVerticalIcon, PlusIcon, Trash2Icon, ExternalLinkIcon } from "lucide-react"
@@ -57,6 +56,7 @@ interface Project {
 
 export function ProjectList() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const navigate = useNavigate()
 
   const loadProjects = () => {
@@ -65,10 +65,10 @@ export function ProjectList() {
 
   useEffect(() => { loadProjects() }, [])
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     await fetch(`/api/projects/${id}`, { method: "DELETE" })
     loadProjects()
-  }
+  }, [])
 
   const columns = useMemo<ColumnDef<Project>[]>(() => [
     {
@@ -115,28 +115,10 @@ export function ProjectList() {
                 查看详情
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={<DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()} />}
-                >
-                  <Trash2Icon />
-                  删除
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>确定要删除此项目？</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      删除项目「{row.original.name}」将同时停止关联的容器并移除所有镜像配置。此操作不可撤销。
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleDelete(row.original.id)}>
-                      删除
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(row.original)}>
+                <Trash2Icon />
+                删除
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -192,6 +174,23 @@ export function ProjectList() {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确定要删除此项目？</AlertDialogTitle>
+            <AlertDialogDescription>
+              删除项目「{deleteTarget?.name}」将同时停止关联的容器并移除所有镜像配置。此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteTarget) { handleDelete(deleteTarget.id); setDeleteTarget(null) } }}>
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

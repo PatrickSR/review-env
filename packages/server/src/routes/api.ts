@@ -269,6 +269,65 @@ apiRouter.delete("/containers/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+// --- MR 列表 ---
+
+apiRouter.get("/projects/:id/mrs", async (req, res) => {
+  const id = Number(req.params.id);
+  const project = projectsDb.getById(id) ?? projectsDb.getByGitlabProjectId(id);
+  if (!project) {
+    res.status(404).json({ error: "未找到项目" });
+    return;
+  }
+
+  try {
+    const mrs = await gitlabApi.listOpenMrs(project);
+    const containers = containersDb.getAll().filter((c) => c.project_id === project.id);
+    const activeMrIids = new Set(containers.map((c) => c.mr_iid));
+
+    const result = mrs.map((mr) => ({
+      ...mr,
+      has_container: activeMrIids.has(mr.iid),
+    }));
+
+    // 活跃 MR 排前面
+    result.sort((a, b) => (a.has_container === b.has_container ? 0 : a.has_container ? -1 : 1));
+
+    res.json(result);
+  } catch (err: any) {
+    log.error("Failed to list MRs", err);
+    res.status(502).json({ error: err.message || "无法获取 MR 列表，请检查 GitLab 配置" });
+  }
+});
+
+apiRouter.get("/projects/:id/mrs/:mrIid/validate", async (req, res) => {
+  const id = Number(req.params.id);
+  const mrIid = Number(req.params.mrIid);
+  // 优先按内部 ID 查找，找不到再按 GitLab project ID 查找
+  const project = projectsDb.getById(id) ?? projectsDb.getByGitlabProjectId(id);
+  if (!project) {
+    res.status(404).json({ valid: false, reason: "项目不存在" });
+    return;
+  }
+
+  try {
+    const mrInfo = await gitlabApi.getMrInfo(project, mrIid);
+    if (mrInfo.state !== "opened") {
+      res.json({ valid: false, reason: "该 MR 已关闭或已合并" });
+      return;
+    }
+    res.json({
+      valid: true,
+      title: mrInfo.title,
+      source_branch: mrInfo.source_branch,
+      author: (mrInfo as any).author?.username || "",
+    });
+  } catch {
+    res.json({ valid: false, reason: "MR 不存在" });
+  }
+});
+
+// --- Stats ---
+
 apiRouter.get("/stats", (_req, res) => {
   const activeContainers = containersDb.countActive();
   const projectCount = projectsDb.getAll().length;

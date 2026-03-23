@@ -6,6 +6,7 @@ import { ProjectDetail } from "@/pages/ProjectDetail"
 import { Containers } from "@/pages/Containers"
 import { Images } from "@/pages/Images"
 import { ImageBuild } from "@/pages/ImageBuild"
+import { Terminal } from "@/pages/Terminal"
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
         <Route path="/images" element={<Images />} />
         <Route path="/images/build" element={<ImageBuild />} />
         <Route path="/containers" element={<Containers />} />
+        <Route path="/mr/:projectId/:mrIid" element={<Terminal />} />
       </Route>
     </Routes>
   )

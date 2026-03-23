@@ -1,7 +1,5 @@
 import { Router } from "express";
 import express from "express";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { projectsDb } from "../db/projects.js";
 import { projectImagesDb } from "../db/project-images.js";
 import { containersDb } from "../db/containers.js";
@@ -9,41 +7,7 @@ import { dockerManager } from "../services/docker-manager.js";
 import { gitlabApi } from "../services/gitlab-api.js";
 import { config } from "../config.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const terminalHtmlPath = path.join(__dirname, "../../public/terminal.html");
-
 export const terminalRouter = Router();
-
-// Terminal page
-terminalRouter.get("/mr/:projectId/:mrIid", async (req, res) => {
-  const gitlabProjectId = Number(req.params.projectId);
-  const mrIid = Number(req.params.mrIid);
-
-  if (!gitlabProjectId || !mrIid) {
-    res.status(400).send("Invalid parameters");
-    return;
-  }
-
-  const project = projectsDb.getByGitlabProjectId(gitlabProjectId);
-  if (!project) {
-    res.status(404).send("Project not found");
-    return;
-  }
-
-  // Check max containers (for display purposes)
-  const activeCount = containersDb.countActive();
-  if (activeCount >= config.maxContainers) {
-    const existing = containersDb.getByProjectAndMr(project.id, mrIid);
-    if (!existing) {
-      res.type("html").send(
-        `<html><body style="background:#1e1e1e;color:#f55;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><h2>资源不足：当前容器数已达上限，请稍后再试</h2></body></html>`
-      );
-      return;
-    }
-  }
-
-  res.sendFile(terminalHtmlPath);
-});
 
 // Terminal status API
 terminalRouter.get("/mr/:projectId/:mrIid/status", async (req, res) => {

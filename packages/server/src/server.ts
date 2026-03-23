@@ -42,10 +42,16 @@ app.use("/api/docker", dockerRouter);
 // Static files (terminal.html)
 app.use("/public", express.static(path.join(__dirname, "../public")));
 
-// Serve admin SPA
+// Serve SPA (根路径，放在所有 API 路由之后)
 const webDistPath = path.join(__dirname, "../../web/dist");
-app.use("/admin", express.static(webDistPath));
-app.get("/admin/*", (_req, res) => {
+app.use(express.static(webDistPath));
+// SPA fallback：非 API/webhook/public 路径都返回 index.html
+app.get("*", (req, res, next) => {
+  // 跳过 API、webhook、public 等后端路由
+  if (req.path.startsWith("/api") || req.path.startsWith("/webhook") || req.path.startsWith("/public")) {
+    next();
+    return;
+  }
   res.sendFile(path.join(webDistPath, "index.html"));
 });
 
