@@ -28,7 +28,7 @@ Review Service 必须监听 HTTP POST 请求 `/webhook/:projectId`，根据 URL 
 
 #### 场景:已有容器运行中
 - **当** 用户访问 `/mr/42/17` 且该 MR 已有容器在运行
-- **那么** 页面必须显示当前运行的工具信息，并展示 ttyd 终端（如已就绪）或初始化进度
+- **那么** 页面必须显示当前运行的工具信息，并在容器就绪后通过 iframe 直连 ttyd 宿主机端口展示终端
 
 #### 场景:项目不存在
 - **当** 用户访问 `/mr/999/17` 但数据库中不存在 gitlab_project_id=999 的项目
@@ -38,16 +38,16 @@ Review Service 必须监听 HTTP POST 请求 `/webhook/:projectId`，根据 URL 
 - **当** 当前运行中的容器数已达上限
 - **那么** 服务必须在页面显示资源不足提示，禁止启动新容器
 
-### 需求:Web Terminal（docker exec 桥接）
-Review Service 必须通过反向代理将终端请求转发到容器内的 ttyd 服务。Review Service 禁止自行实现终端 WebSocket 桥接或 docker exec stream 处理。
+### 需求:Web Terminal（直连 ttyd）
+Review Service 禁止通过反向代理转发 MR 容器的终端请求。终端页面必须通过 iframe 直连容器 ttyd 的宿主机映射端口。Review Service 仅负责提供终端页面和容器状态信息。
 
-#### 场景:终端反向代理
-- **当** 浏览器请求 `/mr/:projectId/:mrIid/terminal/*`（包括 HTTP 和 WebSocket）
-- **那么** Review Service 必须将请求反向代理到该容器对应的 ttyd 端口，包括 WebSocket 升级请求
+#### 场景:终端直连
+- **当** 容器状态为 ready 且 status API 返回 ports 中包含 7681 的宿主机映射端口
+- **那么** 前端必须将 iframe src 设置为 `http://${location.hostname}:${ports[7681]}/`，直连 ttyd 服务
 
 #### 场景:终端输入输出
 - **当** 用户在 ttyd 终端中输入命令
-- **那么** ttyd 通过 PTY 将输入传递给容器内 bash，输出通过 ttyd → WebSocket → 浏览器返回，支持完整的交互式终端（echo、prompt、颜色、快捷键、resize）
+- **那么** ttyd 通过 PTY 将输入传递给容器内 bash，输出通过 ttyd → WebSocket → 浏览器返回，支持完整的交互式终端
 
 #### 场景:连接断开
 - **当** 用户关闭浏览器或 WebSocket 断开
@@ -92,11 +92,16 @@ Review Service 重启后必须从 SQLite 数据库恢复容器管理状态，并
 - **并且** 测试容器的 `project_name` 为 null，`mr_iid` 为 null，`image_display_name` 取自 `test_containers.image` 字段
 
 ### 需求:容器状态 API
-Review Service 必须提供容器状态查询接口，路径包含 projectId。
+Review Service 必须提供容器状态查询接口，返回的 ports 字段必须包含 ttyd 端口（7681）的宿主机映射。
 
-#### 场景:查询状态
-- **当** 前端轮询 `GET /mr/:projectId/:mrIid/status`
-- **那么** 返回 JSON，包含状态（not_found / creating / initializing / ready / error）、端口映射和当前使用的镜像信息
+#### 场景:查询状态（容器就绪）
+- **当** 前端轮询 `GET /mr/:projectId/:mrIid/status` 且容器状态为 ready
+- **那么** 返回 JSON 必须包含 `ports` 字段，其中 `7681` 键对应 ttyd 的宿主机映射端口
+- **并且** 前端必须使用此端口构建 iframe URL
+
+#### 场景:查询状态（容器未就绪）
+- **当** 前端轮询 `GET /mr/:projectId/:mrIid/status` 且容器状态不是 ready
+- **那么** 返回 JSON 包含当前状态（creating/initializing/error），前端继续轮询
 
 ### 需求:Runtime 与框架
 Review Service 必须使用 Node.js 运行 TypeScript 代码，禁止使用 Bun runtime。

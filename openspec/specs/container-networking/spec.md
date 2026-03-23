@@ -1,6 +1,6 @@
 ## 目的
 
-定义 Docker bridge network 配置、ttyd 网络代理和多端口随机映射策略。
+定义 Docker bridge network 配置、ttyd 宿主机端口直连和多端口随机映射策略。
 
 ## Requirements
 
@@ -15,21 +15,20 @@
 - **当** 创建新的 review 容器
 - **那么** 容器必须加入 `review-net` 网络，且可通过容器名 `review-env-{projectId}-mr-{mrIid}` 被其他容器访问
 
-### 需求:ttyd 通过 Docker network 代理
-review-service 必须通过 Docker network 内部地址或宿主机端口代理 ttyd 请求。正式容器的 ttyd 端口（7681）禁止映射到宿主机，通过容器名访问。测试容器的 ttyd 端口映射到宿主机随机端口，通过宿主机地址访问。两种容器的连接信息必须从数据库查询获取。
+### 需求:ttyd 通过宿主机端口直连
+review-service 创建 MR 容器时，必须将 ttyd 端口（7681）映射到宿主机随机端口（`HostPort: "0"`）。前端必须通过宿主机地址和映射端口直连 ttyd，禁止通过反向代理访问。测试容器的 ttyd 端口映射策略保持不变。
 
-#### 场景:正式容器 ttyd WebSocket 代理
-- **当** 用户访问 `/mr/{projectId}/{mrIid}/terminal`
-- **那么** review-service 必须通过 Docker network 将请求代理到 `review-env-{projectId}-mr-{mrIid}:7681`
+#### 场景:正式容器 ttyd 端口映射
+- **当** 创建新的 MR review 容器
+- **那么** 容器的 7681 端口必须映射到宿主机随机端口，映射信息必须通过 `container.inspect()` 获取并存储到 `containers` 表的 `ports` 字段
 
-#### 场景:测试容器 ttyd WebSocket 代理
-- **当** 用户访问 `/api/docker/test/{containerId}/terminal`
-- **那么** review-service 必须从 `test_containers` 表查询该容器的 `host_port`，将请求代理到 `http://{DOCKER_HOST_IP}:{host_port}`
-- **并且** 禁止从内存 Map 中查找连接信息
+#### 场景:前端直连 ttyd
+- **当** 用户在终端页面选择工具并启动容器后，容器状态变为 ready
+- **那么** 前端必须从 status API 的 `ports` 字段获取 7681 对应的宿主机端口，使用 `http://${location.hostname}:${ttydPort}/` 作为 iframe src 直连 ttyd
 
-#### 场景:ttyd 端口不暴露到宿主机（正式容器）
-- **当** 正式 review 容器创建时
-- **那么** 7681 端口禁止绑定到宿主机端口
+#### 场景:测试容器 ttyd 端口映射不变
+- **当** 创建测试容器
+- **那么** ttyd 端口映射策略保持现有行为（映射到宿主机随机端口，通过 `DOCKER_HOST_IP` 访问）
 
 ### 需求:多端口随机映射
 系统必须支持通过项目镜像配置或全局配置指定容器内端口列表。创建容器时，每个端口必须由 Docker 随机分配宿主机端口。系统必须通过 `container.inspect()` 获取实际映射并记录到数据库。
