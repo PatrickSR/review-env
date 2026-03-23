@@ -7,6 +7,7 @@ export interface ProjectImage {
   display_name: string;
   image: string;
   env_vars: string; // JSON string
+  ports: string; // comma-separated port numbers
   sort_order: number;
   enabled: number; // 0 or 1
 }
@@ -17,6 +18,7 @@ export interface CreateImageInput {
   display_name: string;
   image: string;
   env_vars?: string;
+  ports?: string;
   sort_order?: number;
   enabled?: number;
 }
@@ -41,8 +43,8 @@ export const projectImagesDb = {
 
   create(input: CreateImageInput): ProjectImage {
     const stmt = getDb().prepare(`
-      INSERT INTO project_images (project_id, name, display_name, image, env_vars, sort_order, enabled)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO project_images (project_id, name, display_name, image, env_vars, ports, sort_order, enabled)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
       input.project_id,
@@ -50,6 +52,7 @@ export const projectImagesDb = {
       input.display_name,
       input.image,
       input.env_vars ?? "{}",
+      input.ports ?? "",
       input.sort_order ?? 0,
       input.enabled ?? 1
     );

@@ -2,6 +2,21 @@ import type Database from "better-sqlite3";
 
 export function createTables(db: Database.Database): void {
   db.exec(`
+    -- Migration: add ports column to project_images if not exists
+    CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY);
+  `);
+
+  const hasMigration = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("add_project_images_ports");
+  if (!hasMigration) {
+    try {
+      db.exec(`ALTER TABLE project_images ADD COLUMN ports TEXT NOT NULL DEFAULT ''`);
+    } catch {
+      // Column may already exist from fresh CREATE TABLE
+    }
+    db.prepare("INSERT OR IGNORE INTO _migrations (name) VALUES (?)").run("add_project_images_ports");
+  }
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id              INTEGER PRIMARY KEY AUTOINCREMENT,
       name            TEXT NOT NULL,
@@ -24,6 +39,7 @@ export function createTables(db: Database.Database): void {
       env_vars        TEXT NOT NULL DEFAULT '{}',
       sort_order      INTEGER NOT NULL DEFAULT 0,
       enabled         INTEGER NOT NULL DEFAULT 1,
+      ports           TEXT NOT NULL DEFAULT '',
       UNIQUE(project_id, name)
     );
 

@@ -61,16 +61,16 @@ export const dockerManager = {
     // Check max containers
     const activeCount = containersDb.countActive();
     if (activeCount >= config.maxContainers) {
-      throw new Error("Max containers reached");
+      throw new Error("已达到最大容器数量限制");
     }
 
     // Get image config
     const imageConfig = projectImagesDb.getById(imageId);
     if (!imageConfig || imageConfig.project_id !== project.id) {
-      throw new Error("Image not found or does not belong to this project");
+      throw new Error("未找到镜像或镜像不属于该项目");
     }
     if (!imageConfig.enabled) {
-      throw new Error("Image is disabled");
+      throw new Error("该镜像已被禁用");
     }
 
     // Destroy existing container for this project+MR if any
@@ -101,6 +101,17 @@ export const dockerManager = {
     const portBindings: Record<string, object[]> = {
       "7681/tcp": [{ HostPort: "0" }],
     };
+
+    // Map additional ports from image config
+    if (imageConfig.ports) {
+      for (const raw of imageConfig.ports.split(",")) {
+        const trimmed = raw.trim();
+        if (!trimmed || !/^\d+$/.test(trimmed)) continue;
+        const key = `${trimmed}/tcp`;
+        exposedPorts[key] = {};
+        portBindings[key] = [{ HostPort: "0" }];
+      }
+    }
 
     const container = await docker.createContainer({
       Image: imageConfig.image,

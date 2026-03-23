@@ -33,15 +33,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +52,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { EllipsisVerticalIcon, PlusIcon, Trash2Icon, PencilIcon, SaveIcon, XIcon } from "lucide-react"
 
 interface Project {
@@ -73,6 +72,7 @@ interface ProjectImage {
   display_name: string
   image: string
   env_vars: string
+  ports: string
   sort_order: number
   enabled: number
 }
@@ -84,6 +84,7 @@ export function ProjectDetail() {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<Partial<Project>>({})
   const [deleteTarget, setDeleteTarget] = useState<ProjectImage | null>(null)
+  const [editTarget, setEditTarget] = useState<ProjectImage | null>(null)
 
   const load = () => {
     fetch(`/api/projects/${id}`).then((r) => r.json()).then((p) => { setProject(p); setForm(p) })
@@ -173,6 +174,11 @@ export function ProjectDetail() {
                 {row.original.enabled ? "禁用" : "启用"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setEditTarget(row.original)}>
+                <PencilIcon />
+                编辑
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(row.original)}>
                 <Trash2Icon />
                 删除
@@ -244,7 +250,7 @@ export function ProjectDetail() {
             <CardTitle>镜像配置</CardTitle>
             <CardDescription>管理该项目可用的开发环境镜像</CardDescription>
           </div>
-          <AddImageDrawer projectId={Number(id)} onDone={load} />
+          <ImageFormModal mode="create" projectId={Number(id)} onDone={load} />
         </CardHeader>
         <CardContent>
           <div className="overflow-hidden rounded-lg border">
@@ -300,15 +306,47 @@ export function ProjectDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editTarget && (
+        <ImageFormModal
+          mode="edit"
+          projectId={Number(id)}
+          image={editTarget}
+          onDone={() => { setEditTarget(null); load() }}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
     </div>
   )
 }
 
-function AddImageDrawer({ projectId, onDone }: { projectId: number; onDone: () => void }) {
-  const isMobile = useIsMobile()
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: "", display_name: "", image: "" })
-  const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([])
+function ImageFormModal({
+  mode,
+  projectId,
+  image,
+  onDone,
+  onClose,
+}: {
+  mode: "create" | "edit"
+  projectId: number
+  image?: ProjectImage
+  onDone: () => void
+  onClose?: () => void
+}) {
+  const [open, setOpen] = useState(mode === "edit")
+  const [form, setForm] = useState({
+    name: image?.name ?? "",
+    display_name: image?.display_name ?? "",
+    image: image?.image ?? "",
+    ports: image?.ports ?? "",
+  })
+  const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>(() => {
+    if (!image?.env_vars) return []
+    try {
+      const obj = JSON.parse(image.env_vars)
+      return Object.entries(obj).map(([key, value]) => ({ key, value: String(value) }))
+    } catch { return [] }
+  })
   const [error, setError] = useState("")
   const [dockerImages, setDockerImages] = useState<{ name: string; tag: string }[]>([])
   const [imageSearch, setImageSearch] = useState("")
@@ -327,140 +365,173 @@ function AddImageDrawer({ projectId, onDone }: { projectId: number; onDone: () =
     return full.toLowerCase().includes(imageSearch.toLowerCase())
   })
 
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (!next) onClose?.()
+  }
+
   const handleSubmit = async () => {
     setError("")
     const envObj: Record<string, string> = {}
     for (const { key, value } of envVars) {
       if (key.trim()) envObj[key.trim()] = value
     }
-    const res = await fetch(`/api/projects/${projectId}/images`, {
-      method: "POST",
+    const body = { ...form, env_vars: JSON.stringify(envObj) }
+
+    const url = mode === "edit"
+      ? `/api/projects/${projectId}/images/${image!.id}`
+      : `/api/projects/${projectId}/images`
+    const method = mode === "edit" ? "PUT" : "POST"
+
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        env_vars: JSON.stringify(envObj),
-      }),
+      body: JSON.stringify(body),
     })
     if (!res.ok) {
       const data = await res.json()
-      setError(data.error || "创建失败")
+      setError(data.error || (mode === "edit" ? "更新失败" : "创建失败"))
       return
     }
     setOpen(false)
-    setForm({ name: "", display_name: "", image: "" })
-    setEnvVars([])
+    if (mode === "create") {
+      setForm({ name: "", display_name: "", image: "", ports: "" })
+      setEnvVars([])
+    }
     onDone()
   }
 
-  return (
-    <Drawer direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button variant="outline" size="sm">
-          <PlusIcon />
-          添加镜像
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>添加镜像</DrawerTitle>
-          <DrawerDescription>为项目添加新的开发环境镜像配置</DrawerDescription>
-        </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="img-name">标识名 *</Label>
-              <Input id="img-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="img-display">显示名 *</Label>
-              <Input id="img-display" value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 relative">
-            <Label>Docker 镜像 *</Label>
-            <Input
-              value={form.image}
-              placeholder="搜索或选择镜像..."
-              onChange={(e) => {
-                setForm({ ...form, image: e.target.value })
-                setImageSearch(e.target.value)
-                setShowDropdown(true)
-              }}
-              onFocus={() => { setImageSearch(form.image); setShowDropdown(true) }}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-            />
-            {showDropdown && filteredImages.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
-                {filteredImages.map((img, i) => (
-                  <div
-                    key={i}
-                    className="cursor-pointer px-3 py-2 text-sm hover:bg-accent"
-                    onMouseDown={() => {
-                      setForm({ ...form, image: `${img.name}:${img.tag}` })
-                      setShowDropdown(false)
-                    }}
-                  >
-                    {img.name}:{img.tag}
-                  </div>
-                ))}
-              </div>
-            )}
+  const title = mode === "edit" ? "编辑镜像" : "添加镜像"
+  const description = mode === "edit" ? "修改开发环境镜像配置" : "为项目添加新的开发环境镜像配置"
+  const submitLabel = mode === "edit" ? "保存" : "创建"
+
+  const formContent = (
+    <>
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
+      <div className="flex flex-col gap-4 overflow-y-auto text-sm max-h-[60vh]">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-3">
+            <Label htmlFor="img-name">标识名 *</Label>
+            <Input id="img-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="flex flex-col gap-3">
-            <Label>环境变量</Label>
-            <div className="flex flex-col gap-2">
-              {envVars.map((env, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <Input
-                    placeholder="变量名"
-                    value={env.key}
-                    onChange={(e) => {
-                      const next = [...envVars]
-                      next[i] = { ...next[i]!, key: e.target.value }
-                      setEnvVars(next)
-                    }}
-                    className="flex-1"
-                  />
-                  <Input
-                    placeholder="值"
-                    value={env.value}
-                    onChange={(e) => {
-                      const next = [...envVars]
-                      next[i] = { ...next[i]!, value: e.target.value }
-                      setEnvVars(next)
-                    }}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0 text-muted-foreground"
-                    onClick={() => setEnvVars(envVars.filter((_, j) => j !== i))}
-                  >
-                    <XIcon className="size-4" />
-                  </Button>
+            <Label htmlFor="img-display">显示名 *</Label>
+            <Input id="img-display" value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 relative">
+          <Label>Docker 镜像 *</Label>
+          <Input
+            value={form.image}
+            placeholder="搜索或选择镜像..."
+            onChange={(e) => {
+              setForm({ ...form, image: e.target.value })
+              setImageSearch(e.target.value)
+              setShowDropdown(true)
+            }}
+            onFocus={() => { setImageSearch(form.image); setShowDropdown(true) }}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          />
+          {showDropdown && filteredImages.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
+              {filteredImages.map((img, i) => (
+                <div
+                  key={i}
+                  className="cursor-pointer px-3 py-2 text-sm hover:bg-accent"
+                  onMouseDown={() => {
+                    setForm({ ...form, image: `${img.name}:${img.tag}` })
+                    setShowDropdown(false)
+                  }}
+                >
+                  {img.name}:{img.tag}
                 </div>
               ))}
-              <Button
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={() => setEnvVars([...envVars, { key: "", value: "" }])}
-              >
-                <PlusIcon className="size-4 mr-1" />
-                添加变量
-              </Button>
             </div>
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          )}
         </div>
-        <DrawerFooter>
-          <Button onClick={handleSubmit}>创建</Button>
-          <DrawerClose asChild>
-            <Button variant="outline">取消</Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        <div className="flex flex-col gap-3">
+          <Label htmlFor="img-ports">映射端口</Label>
+          <Input
+            id="img-ports"
+            value={form.ports}
+            placeholder="3000, 5173, 8080"
+            onChange={(e) => setForm({ ...form, ports: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">逗号分隔的端口号，容器创建时会自动映射到宿主机随机端口</p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Label>环境变量</Label>
+          <div className="flex flex-col gap-2">
+            {envVars.map((env, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Input
+                  placeholder="变量名"
+                  value={env.key}
+                  onChange={(e) => {
+                    const next = [...envVars]
+                    next[i] = { ...next[i]!, key: e.target.value }
+                    setEnvVars(next)
+                  }}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="值"
+                  value={env.value}
+                  onChange={(e) => {
+                    const next = [...envVars]
+                    next[i] = { ...next[i]!, value: e.target.value }
+                    setEnvVars(next)
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0 text-muted-foreground"
+                  onClick={() => setEnvVars(envVars.filter((_, j) => j !== i))}
+                >
+                  <XIcon className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={() => setEnvVars([...envVars, { key: "", value: "" }])}
+            >
+              <PlusIcon className="size-4 mr-1" />
+              添加变量
+            </Button>
+          </div>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>取消</DialogClose>
+        <Button onClick={handleSubmit}>{submitLabel}</Button>
+      </DialogFooter>
+    </>
+  )
+
+  if (mode === "edit") {
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-lg">{formContent}</DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        <PlusIcon />
+        添加镜像
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">{formContent}</DialogContent>
+    </Dialog>
   )
 }
