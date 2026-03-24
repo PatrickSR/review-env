@@ -2,19 +2,19 @@
 
 - [x] 1.1 使用 git filter-repo 改写所有历史 commit 的 author 为 `patrick <15920996910sun@gmail.com>`
 - [x] 1.2 设置项目级 git config（`user.name=patrick`，`user.email=15920996910sun@gmail.com`）
-- [ ] 1.3 添加 GitHub remote 并推送代码到 https://github.com/PatrickSR/review-env
+- [x] 1.3 添加 GitHub remote 并推送代码到 https://github.com/PatrickSR/review-env
 
 ## 2. GitHub Actions Workflow
 
-- [ ] 2.1 创建 `.github/workflows/docker-publish.yml` workflow 文件，配置 tag 推送（`v*`）和 `workflow_dispatch` 触发条件
-- [ ] 2.2 配置 Docker Buildx 和 QEMU 多平台构建环境（linux/amd64 + linux/arm64）
-- [ ] 2.3 配置 ghcr.io 登录（使用 GITHUB_TOKEN）和 metadata-action 自动生成镜像标签（版本号 + latest）
-- [ ] 2.4 配置 build-push-action 执行多平台构建并推送到 `ghcr.io/patricksr/review-env`
+- [x] 2.1 创建 `.github/workflows/docker-publish.yml` workflow 文件，配置 tag 推送（`v*`）和 `workflow_dispatch` 触发条件
+- [x] 2.2 配置 Docker Buildx 和 QEMU 多平台构建环境（linux/amd64 + linux/arm64）
+- [x] 2.3 配置 ghcr.io 登录（使用 GITHUB_TOKEN）和 metadata-action 自动生成镜像标签（版本号 + latest）
+- [x] 2.4 配置 build-push-action 执行多平台构建并推送到 `ghcr.io/patricksr/review-env`
 
 ## 3. Docker Compose 配置改造
 
-- [ ] 3.1 修改 `docker-compose.yml`，将 `build:` 替换为 `image: ghcr.io/patricksr/review-env:latest`，保持其余配置不变
-- [ ] 3.2 创建 `docker-compose.build.yml`，包含 `build:` 指令和与 `docker-compose.yml` 完全一致的 volumes/networks/environment/ports 配置
+- [x] 3.1 修改 `docker-compose.yml`，将 `build:` 替换为 `image: ghcr.io/patricksr/review-env:latest`，保持其余配置不变
+- [x] 3.2 创建 `docker-compose.build.yml`，包含 `build:` 指令和与 `docker-compose.yml` 完全一致的 volumes/networks/environment/ports 配置
 
 ## 4. 验证
 

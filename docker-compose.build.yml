@@ -1,6 +1,10 @@
+# 本地构建版本 — 供开发者或想自行构建的用户使用
+# 用法: docker compose -f docker-compose.build.yml up -d --build
 services:
   review-service:
-    image: ghcr.io/patricksr/review-env:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
       - ./data:/app/packages/server/data
