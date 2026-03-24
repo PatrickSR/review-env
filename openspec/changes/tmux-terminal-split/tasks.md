@@ -1,12 +1,12 @@
 ## 1. Dockerfile 模板修改
 
-- [ ] 1.1 在 `image-templates.ts` 的 `generateDockerfile()` 中，将 apt-get install 行追加 `tmux`（与 git、curl 同一行安装）
+- [x] 1.1 在 `image-templates.ts` 的 `generateDockerfile()` 中，将 apt-get install 行追加 `tmux`（与 git、curl 同一行安装）
 
 ## 2. Entrypoint 脚本修改
 
-- [ ] 2.1 在 `image-templates.ts` 的 `ENTRYPOINT_SH` 中，在启动 ttyd 之前写入 `/root/.tmux.conf` 配置文件，内容包括：鼠标支持（`set -g mouse on`）、直觉快捷键（`|` 竖分、`-` 横分）、状态栏快捷键提示、256 色支持、scrollback buffer 10000 行
-- [ ] 2.2 将 ttyd 启动命令从 `ttyd -W -p 7681 -w /workspace /bin/bash &` 改为 `ttyd -W -p 7681 -w /workspace tmux new-session -A -s main &`
-- [ ] 2.3 确保 clone 失败分支中的 ttyd 启动命令也同步修改为 tmux 版本
+- [x] 2.1 在 `image-templates.ts` 的 `ENTRYPOINT_SH` 中，在启动 ttyd 之前写入 `/root/.tmux.conf` 配置文件，内容包括：鼠标支持（`set -g mouse on`）、直觉快捷键（`|` 竖分、`-` 横分）、状态栏快捷键提示、256 色支持、scrollback buffer 10000 行
+- [x] 2.2 将 ttyd 启动命令从 `ttyd -W -p 7681 -w /workspace /bin/bash &` 改为 `ttyd -W -p 7681 -w /workspace tmux new-session -A -s main &`
+- [x] 2.3 确保 clone 失败分支中的 ttyd 启动命令也同步修改为 tmux 版本
 
 ## 3. 验证
 

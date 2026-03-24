@@ -21,7 +21,32 @@ set -e
 
 STATUS_FILE="/tmp/review-status"
 
-echo "cloning" > "$STATUS_FILE"
+# 写入 tmux 配置（对新手友好）
+cat > /root/.tmux.conf << 'TMUX_CONF'
+# 鼠标支持：点击切 pane、拖拽调大小、滚轮翻页
+set -g mouse on
+
+# 256 色支持
+set -g default-terminal "screen-256color"
+
+# scrollback buffer
+set -g history-limit 10000
+
+# 直觉分屏快捷键：| 竖分，- 横分
+bind | split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+
+# 状态栏快捷键提示
+set -g status-style "bg=colour235,fg=colour248"
+set -g status-left "[#S] "
+set -g status-right " Ctrl+B |:竖分 -:横分 "
+set -g status-right-length 40
+
+# 当前 pane 边框高亮
+set -g pane-active-border-style "fg=colour39"
+TMUX_CONF
+
+echo "cloning" > "\$STATUS_FILE"
 
 # Configure git credentials
 git config --global user.name "\$GIT_USER_NAME"
@@ -33,7 +58,7 @@ REPO_URL="\${GITLAB_URL}/\${PROJECT_PATH}.git"
 if ! git clone --single-branch -b "\$BRANCH" "\$REPO_URL" /workspace 2>&1; then
   echo "error: clone failed" > "\$STATUS_FILE"
   echo "Clone failed, starting ttyd for debugging"
-  ttyd -W -p 7681 -w /workspace /bin/bash &
+  ttyd -W -p 7681 -w /workspace tmux new-session -A -s main &
   exec sleep infinity
 fi
 
@@ -42,7 +67,7 @@ cd /workspace
 echo "ready" > "\$STATUS_FILE"
 echo "Environment ready, starting ttyd"
 
-ttyd -W -p 7681 -w /workspace /bin/bash &
+ttyd -W -p 7681 -w /workspace tmux new-session -A -s main &
 
 exec sleep infinity
 `;
@@ -104,8 +129,8 @@ export function generateDockerfile(tool: string, runtime: string): string {
     '',
     'LABEL managed-by=review-service',
     '',
-    '# Install git and curl',
-    'RUN apt-get update && apt-get install -y --no-install-recommends git curl && \\',
+    '# Install git, curl and tmux',
+    'RUN apt-get update && apt-get install -y --no-install-recommends git curl tmux && \\',
     '    rm -rf /var/lib/apt/lists/*',
     '',
     '# Install ttyd',
