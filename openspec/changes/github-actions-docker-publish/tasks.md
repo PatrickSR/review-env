@@ -19,5 +19,5 @@
 ## 4. 验证
 
 - [x] 4.1 本地构建验证：使用 `docker compose -f docker-compose.build.yml up -d --build` 构建并启动，确认服务正常（API 响应、SPA 页面加载）
-- [ ] 4.2 打 tag 并推送，触发 GitHub Actions 构建，确认 workflow 执行成功
-- [ ] 4.3 预构建镜像验证：使用 `docker compose up -d` 拉取 ghcr.io 镜像并启动，确认服务正常
+- [x] 4.2 打 tag 并推送，触发 GitHub Actions 构建，确认 workflow 执行成功
+- [x] 4.3 预构建镜像验证：使用 `docker compose up -d` 拉取 ghcr.io 镜像并启动，确认服务正常
