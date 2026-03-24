@@ -1,7 +1,7 @@
 ## 1. 推送前准备
 
-- [ ] 1.1 使用 git filter-repo 改写所有历史 commit 的 author 为 `patrick <15920996910sun@gmail.com>`
-- [ ] 1.2 设置项目级 git config（`user.name=patrick`，`user.email=15920996910sun@gmail.com`）
+- [x] 1.1 使用 git filter-repo 改写所有历史 commit 的 author 为 `patrick <15920996910sun@gmail.com>`
+- [x] 1.2 设置项目级 git config（`user.name=patrick`，`user.email=15920996910sun@gmail.com`）
 - [ ] 1.3 添加 GitHub remote 并推送代码到 https://github.com/PatrickSR/review-env
 
 ## 2. GitHub Actions Workflow
