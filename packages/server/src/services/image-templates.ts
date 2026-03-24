@@ -30,7 +30,7 @@ git config --global credential.helper '!f() { echo "username=oauth2"; echo "pass
 
 # Shallow clone single branch
 REPO_URL="\${GITLAB_URL}/\${PROJECT_PATH}.git"
-if ! git clone --depth 1 --single-branch -b "\$BRANCH" "\$REPO_URL" /workspace 2>&1; then
+if ! git clone --single-branch -b "\$BRANCH" "\$REPO_URL" /workspace 2>&1; then
   echo "error: clone failed" > "\$STATUS_FILE"
   echo "Clone failed, starting ttyd for debugging"
   ttyd -W -p 7681 -w /workspace /bin/bash &
