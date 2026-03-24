@@ -29,13 +29,12 @@ RUN npm ci --omit=dev -w packages/server
 
 # Copy server build output
 COPY --from=build /app/packages/server/dist ./packages/server/dist
-COPY --from=build /app/packages/server/public ./packages/server/public
 
 # Copy web build output (SPA static files)
 COPY --from=build /app/packages/web/dist ./packages/web/dist
 
 WORKDIR /app/packages/server
 
-EXPOSE 3000
+EXPOSE 3333
 
 CMD ["node", "dist/server.js"]
