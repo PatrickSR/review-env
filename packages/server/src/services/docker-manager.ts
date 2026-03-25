@@ -102,10 +102,10 @@ export const dockerManager = {
       envList.push(`BEFORE_SCRIPT=${encoded}`);
     }
 
-    // ttyd (7681) mapped to random host port
-    const exposedPorts: Record<string, object> = { "7681/tcp": {} };
+    // code-server (8080) mapped to random host port
+    const exposedPorts: Record<string, object> = { "8080/tcp": {} };
     const portBindings: Record<string, object[]> = {
-      "7681/tcp": [{ HostPort: "0" }],
+      "8080/tcp": [{ HostPort: "0" }],
     };
 
     // Map additional ports from image config

@@ -90,13 +90,17 @@ export function Images() {
       const data = await res.json()
       if (res.ok) {
         setTestContainer({ containerId: data.containerId, image: `${imageName}:${tag}` })
-        // Poll until ttyd is ready (use GET because ttyd doesn't support HEAD)
+        // Poll until code-server is ready, then open in new tab
         const poll = async () => {
-          for (let i = 0; i < 30; i++) {
+          for (let i = 0; i < 60; i++) {
             await new Promise((r) => setTimeout(r, 1000))
             try {
-              const check = await fetch(`/api/docker/test/${data.containerId}/terminal/token`)
-              if (check.ok) { setTestReady(true); return }
+              const check = await fetch(`/api/docker/test/${data.containerId}/terminal/`)
+              if (check.ok) {
+                setTestReady(true)
+                window.open(`/api/docker/test/${data.containerId}/terminal/`, "_blank")
+                return
+              }
             } catch {}
           }
         }
@@ -241,28 +245,17 @@ export function Images() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Test container terminal overlay */}
+      {/* Test container banner */}
       {testContainer && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col">
-          <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-700">
-            <span className="text-sm text-zinc-300">
-              测试容器: {testContainer.image}
-            </span>
-            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={stopTest}>
-              <XIcon className="size-4 mr-1" />
-              停止并关闭
-            </Button>
-          </div>
-          {testReady ? (
-            <iframe
-              className="flex-1 w-full border-none"
-              src={`/api/docker/test/${testContainer.containerId}/terminal/`}
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-zinc-400">
-              终端启动中...
-            </div>
-          )}
+        <div className="flex items-center justify-between px-4 py-3 rounded-lg border bg-muted/50">
+          <span className="text-sm text-muted-foreground">
+            测试容器: {testContainer.image}
+            {testReady ? " — 已在新标签页打开" : " — 启动中..."}
+          </span>
+          <Button variant="destructive" size="sm" onClick={stopTest}>
+            <XIcon className="size-4 mr-1" />
+            停止测试容器
+          </Button>
         </div>
       )}
     </div>

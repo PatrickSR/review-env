@@ -62,7 +62,7 @@ async function handleMergeRequestEvent(body: any, project: any): Promise<void> {
     const comment = [
       "🚀 **Review Environment 可用**",
       "",
-      `- 终端：${baseUrl}/mr/${project.gitlab_project_id}/${mrIid}`,
+      `- 开发环境：${baseUrl}/mr/${project.gitlab_project_id}/${mrIid}`,
     ].join("\n");
     await gitlabApi.postComment(project, mrIid, comment);
   } else if (action === "merge" || action === "close") {

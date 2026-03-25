@@ -262,10 +262,10 @@ dockerRouter.post("/test", async (req, res) => {
     const container = await docker.createContainer({
       Image: image,
       name: containerName,
-      ExposedPorts: { "7681/tcp": {} },
+      ExposedPorts: { "8080/tcp": {} },
       HostConfig: {
         NetworkMode: NETWORK_NAME,
-        PortBindings: { "7681/tcp": [{ HostPort: "0" }] },
+        PortBindings: { "8080/tcp": [{ HostPort: "0" }] },
       },
     });
 
@@ -275,7 +275,7 @@ dockerRouter.post("/test", async (req, res) => {
 
     // Get the assigned host port
     const inspectInfo = await container.inspect();
-    const portBindings = inspectInfo.NetworkSettings?.Ports?.["7681/tcp"];
+    const portBindings = inspectInfo.NetworkSettings?.Ports?.["8080/tcp"];
     const hostPort = portBindings?.[0]?.HostPort;
     if (!hostPort) {
       await container.stop().catch(() => {});

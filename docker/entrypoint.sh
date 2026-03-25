@@ -7,8 +7,12 @@ write_status() {
   echo "$1" > "$STATUS_FILE"
 }
 
-start_ttyd() {
-  ttyd -W -p 7681 -w /workspace ${SHELL:-/bin/bash} &
+start_ide() {
+  code-server \
+    --bind-addr 0.0.0.0:8080 \
+    --auth none \
+    --disable-telemetry \
+    /workspace &
 }
 
 # --- Clone ---
@@ -21,7 +25,7 @@ git config --global credential.helper '!f() { echo "username=oauth2"; echo "pass
 REPO_URL="${GITLAB_URL}/${PROJECT_PATH}.git"
 if ! git clone --single-branch -b "$BRANCH" "$REPO_URL" /workspace 2>&1; then
   write_status "error: clone failed"
-  start_ttyd
+  start_ide
   exec sleep infinity
 fi
 
@@ -34,7 +38,7 @@ if [ -n "$BEFORE_SCRIPT" ]; then
   SCRIPT_CONTENT=$(echo "$BEFORE_SCRIPT" | base64 -d)
   if ! bash -c "$SCRIPT_CONTENT"; then
     write_status "error: before-script failed"
-    start_ttyd
+    start_ide
     exec sleep infinity
   fi
 fi
@@ -42,5 +46,5 @@ fi
 # --- Ready ---
 write_status "ready"
 
-start_ttyd
+start_ide
 exec sleep infinity
