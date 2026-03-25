@@ -9,7 +9,7 @@ Review 镜像必须基于 node:22 构建，包含 git、curl、Claude Code、tty
 
 #### 场景:镜像内容完整
 - **当** 使用 Dockerfile 构建镜像
-- **那么** 镜像包含 node 22、git、curl、Claude Code（通过 CVTE npm registry 安装）、ttyd 二进制文件、entrypoint.sh 脚本
+- **那么** 镜像包含 node 22、git、curl、Claude Code、ttyd 二进制文件、entrypoint.sh 脚本。镜像禁止包含 tmux。
 
 #### 场景:ttyd 可用
 - **当** 容器启动后
@@ -20,11 +20,11 @@ Review 镜像必须基于 node:22 构建，包含 git、curl、Claude Code、tty
 
 #### 场景:正常启动
 - **当** 容器启动，环境变量中包含 BRANCH、GITLAB_URL、GITLAB_PAT、PROJECT_PATH、GIT_USER_NAME、GIT_USER_EMAIL
-- **那么** entrypoint 执行以下步骤：配置 git credentials → `git clone --depth 1 --single-branch -b $BRANCH` 到 /workspace → yarn install → 写入就绪标记 → 启动 ttyd（`ttyd -W -p 7681 /bin/bash`，后台运行）→ 保持容器运行（`sleep infinity`）
+- **那么** entrypoint 执行以下步骤：配置 git credentials → `git clone --single-branch -b $BRANCH` 到 /workspace → 写入就绪标记 → 启动 ttyd（`ttyd -W -p 7681 -w /workspace /bin/bash`，后台运行）→ 保持容器运行（`sleep infinity`）
 
 #### 场景:clone 失败
 - **当** git clone 因网络或认证问题失败
-- **那么** entrypoint 写入错误标记文件，仍启动 ttyd（reviewer 可通过终端排查），保持容器运行
+- **那么** entrypoint 写入错误标记文件，启动 ttyd（`ttyd -W -p 7681 -w /workspace /bin/bash`，后台运行），保持容器运行
 
 #### 场景:install 失败
 - **当** yarn install 失败
@@ -55,3 +55,7 @@ Review 镜像必须基于 node:22 构建，包含 git、curl、Claude Code、tty
 #### 场景:ttyd 允许写入
 - **当** ttyd 启动时
 - **那么** 必须使用 `-W` 参数允许客户端输入（writable 模式）
+
+#### 场景:无终端复用器
+- **当** ttyd 启动时
+- **那么** ttyd 必须直接启动 `/bin/bash`，禁止通过 tmux 或 screen 等终端复用器间接启动
