@@ -1,6 +1,6 @@
 ## 目的
 
-定义 Docker bridge network 配置、ttyd 宿主机端口直连和多端口随机映射策略。
+定义 Docker bridge network 配置、code-server 宿主机端口直连和多端口随机映射策略。
 
 ## Requirements
 
@@ -15,20 +15,20 @@
 - **当** 创建新的 review 容器
 - **那么** 容器必须加入 `review-net` 网络，且可通过容器名 `review-env-{projectId}-mr-{mrIid}` 被其他容器访问
 
-### 需求:ttyd 通过宿主机端口直连
-review-service 创建 MR 容器时，必须将 ttyd 端口（7681）映射到宿主机随机端口（`HostPort: "0"`）。前端必须通过宿主机地址和映射端口直连 ttyd，禁止通过反向代理访问。测试容器的 ttyd 端口映射策略保持不变。
+### 需求:code-server 通过宿主机端口直连
+review-service 创建 MR 容器时，必须将 code-server 端口（8080）映射到宿主机随机端口（`HostPort: "0"`）。前端必须通过宿主机地址和映射端口直连 code-server，禁止通过反向代理访问。测试容器的 code-server 端口映射策略保持不变。
 
-#### 场景:正式容器 ttyd 端口映射
+#### 场景:正式容器 code-server 端口映射
 - **当** 创建新的 MR review 容器
-- **那么** 容器的 7681 端口必须映射到宿主机随机端口，映射信息必须通过 `container.inspect()` 获取并存储到 `containers` 表的 `ports` 字段
+- **那么** 容器的 8080 端口必须映射到宿主机随机端口，映射信息必须通过 `container.inspect()` 获取并存储到 `containers` 表的 `ports` 字段
 
-#### 场景:前端直连 ttyd
-- **当** 用户在终端页面选择工具并启动容器后，容器状态变为 ready
-- **那么** 前端必须从 status API 的 `ports` 字段获取 7681 对应的宿主机端口，使用 `http://${location.hostname}:${ttydPort}/` 作为 iframe src 直连 ttyd
+#### 场景:前端直连 code-server
+- **当** 用户在终端页面选择镜像并启动容器后，容器状态变为 ready
+- **那么** 前端必须从 status API 的 `ports` 字段获取 8080 对应的宿主机端口，使用 `http://${location.hostname}:${port}/` 通过 `window.open` 在新标签页打开 code-server
 
-#### 场景:测试容器 ttyd 端口映射不变
+#### 场景:测试容器 code-server 端口映射不变
 - **当** 创建测试容器
-- **那么** ttyd 端口映射策略保持现有行为（映射到宿主机随机端口，通过 `DOCKER_HOST_IP` 访问）
+- **那么** code-server 端口映射策略保持现有行为（映射到宿主机随机端口，通过 `DOCKER_HOST_IP` 访问）
 
 ### 需求:多端口随机映射
 系统必须支持通过项目镜像配置或全局配置指定容器内端口列表。创建容器时，每个端口必须由 Docker 随机分配宿主机端口。系统必须通过 `container.inspect()` 获取实际映射并记录到数据库。
@@ -54,7 +54,7 @@ review-service 创建 MR 容器时，必须将 ttyd 端口（7681）映射到宿
 
 #### 场景:macOS Colima 环境
 - **当** 在 macOS + Colima 环境下执行 `docker compose up -d`
-- **那么** review-service 必须正常启动，能创建 review 容器，ttyd 代理和端口映射必须正常工作
+- **那么** review-service 必须正常启动，能创建 review 容器，code-server 端口映射必须正常工作
 
 #### 场景:Linux 原生 Docker 环境
 - **当** 在 Linux 原生 Docker 环境下执行 `docker compose up -d`

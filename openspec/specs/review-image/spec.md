@@ -1,34 +1,34 @@
 ## 目的
 
-定义 Review 容器镜像的构建规范、entrypoint 行为、状态标记机制和 ttyd 服务。
+定义 Review 容器镜像的构建规范、entrypoint 行为、状态标记机制和 code-server 服务。
 
 ## Requirements
 
 ### 需求:镜像构建
-Review 镜像必须基于 node:22 构建，包含 git、curl、Claude Code、ttyd 和 entrypoint 脚本。
+Review 镜像必须基于 `review-base` 构建，由用户自行编写 Dockerfile 决定安装的工具和运行时。review-base 基于 ubuntu:24.04，包含 git、curl、code-server 和 entrypoint.sh。
 
-#### 场景:镜像内容完整
-- **当** 使用 Dockerfile 构建镜像
-- **那么** 镜像包含 node 22、git、curl、Claude Code、ttyd 二进制文件、entrypoint.sh 脚本。镜像禁止包含 tmux。
+#### 场景:镜像内容由用户决定
+- **当** 用户编写 Dockerfile 构建 review 镜像
+- **那么** 用户必须使用 `FROM ghcr.io/patricksr/review-base:latest` 作为基础，自行安装所需的语言运行时和 AI 工具
 
-#### 场景:ttyd 可用
-- **当** 容器启动后
-- **那么** ttyd 二进制文件必须存在于 PATH 中，可直接执行
+#### 场景:code-server 可用
+- **当** 基于 review-base 的镜像启动容器
+- **那么** code-server 必须已安装并存在于 PATH 中（由 review-base 提供），可直接执行
 
 ### 需求:Entrypoint 脚本
-容器启动时，entrypoint 脚本必须自动完成代码准备、启动 ttyd 并保持容器运行。
+容器启动时，entrypoint 脚本必须自动完成代码准备、执行 before_script、启动 code-server 并保持容器运行。
 
 #### 场景:正常启动
 - **当** 容器启动，环境变量中包含 BRANCH、GITLAB_URL、GITLAB_PAT、PROJECT_PATH、GIT_USER_NAME、GIT_USER_EMAIL
-- **那么** entrypoint 执行以下步骤：配置 git credentials → `git clone --single-branch -b $BRANCH` 到 /workspace → 写入就绪标记 → 启动 ttyd（`ttyd -W -p 7681 -w /workspace /bin/bash`，后台运行）→ 保持容器运行（`sleep infinity`）
+- **那么** entrypoint 执行以下步骤：写 status "cloning" → 配置 git credentials → git clone 到 /workspace → 写 status "initializing" → 执行 before_script（如有）→ 写 status "ready" → 启动 code-server（`code-server --bind-addr 0.0.0.0:8080 --auth none --disable-telemetry /workspace`，后台运行）→ sleep infinity
 
 #### 场景:clone 失败
 - **当** git clone 因网络或认证问题失败
-- **那么** entrypoint 写入错误标记文件，启动 ttyd（`ttyd -W -p 7681 -w /workspace /bin/bash`，后台运行），保持容器运行
+- **那么** entrypoint 写入 "error: clone failed"，启动 code-server，保持容器运行
 
-#### 场景:install 失败
-- **当** yarn install 失败
-- **那么** entrypoint 写入就绪标记文件（附带 install 失败警告），启动 ttyd，保持容器运行
+#### 场景:before_script 失败
+- **当** before_script 执行返回非零退出码
+- **那么** entrypoint 写入 "error: before-script failed"，启动 code-server，保持容器运行
 
 ### 需求:状态标记
 容器必须通过文件标记当前初始化状态，供 Review Service 查询。
@@ -41,21 +41,21 @@ Review 镜像必须基于 node:22 构建，包含 git、curl、Claude Code、tty
 - **当** Review Service 需要知道容器初始化进度
 - **那么** 通过 `docker exec cat /tmp/review-status` 读取状态文件
 
-### 需求:ttyd 服务
-容器就绪后必须运行 ttyd 进程，提供 web terminal 服务。
+### 需求:code-server 服务
+容器就绪后必须运行 code-server 进程，提供 web IDE 服务。
 
-#### 场景:ttyd 监听端口
+#### 场景:code-server 监听端口
 - **当** 容器初始化完成（无论成功或失败）
-- **那么** ttyd 必须在容器内 7681 端口监听，提供 `/bin/bash` 交互式终端
+- **那么** code-server 必须在容器内 8080 端口监听
 
-#### 场景:ttyd 工作目录
-- **当** 用户通过 ttyd 连接终端
-- **那么** bash 的工作目录必须为 `/workspace`（clone 的代码目录）
+#### 场景:code-server 免认证
+- **当** code-server 启动时
+- **那么** 必须使用 `--auth none` 参数，禁止要求密码认证
 
-#### 场景:ttyd 允许写入
-- **当** ttyd 启动时
-- **那么** 必须使用 `-W` 参数允许客户端输入（writable 模式）
+#### 场景:code-server 工作目录
+- **当** 用户通过浏览器访问 code-server
+- **那么** code-server 必须自动打开 `/workspace` 目录（clone 的代码目录）
 
-#### 场景:无终端复用器
-- **当** ttyd 启动时
-- **那么** ttyd 必须直接启动 `/bin/bash`，禁止通过 tmux 或 screen 等终端复用器间接启动
+#### 场景:code-server 禁用遥测
+- **当** code-server 启动时
+- **那么** 必须使用 `--disable-telemetry` 参数禁用遥测数据收集
