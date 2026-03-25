@@ -146,7 +146,7 @@ apiRouter.post("/projects/:id/images", (req, res) => {
     return;
   }
 
-  const { name, display_name, image, env_vars, ports, sort_order, enabled } = req.body;
+  const { name, display_name, image, env_vars, ports, before_script, sort_order, enabled } = req.body;
   if (!name || !display_name || !image) {
     res.status(400).json({ error: "缺少必填字段：标识名、显示名、Docker 镜像" });
     return;
@@ -168,6 +168,7 @@ apiRouter.post("/projects/:id/images", (req, res) => {
       image,
       env_vars: typeof env_vars === "string" ? env_vars : JSON.stringify(env_vars || {}),
       ports: ports ?? "",
+      before_script: before_script ?? "",
       sort_order: sort_order ?? 0,
       enabled: enabled ?? 1,
     });

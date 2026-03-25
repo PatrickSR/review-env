@@ -73,6 +73,7 @@ interface ProjectImage {
   image: string
   env_vars: string
   ports: string
+  before_script: string
   sort_order: number
   enabled: number
 }
@@ -339,6 +340,7 @@ function ImageFormModal({
     display_name: image?.display_name ?? "",
     image: image?.image ?? "",
     ports: image?.ports ?? "",
+    before_script: image?.before_script ?? "",
   })
   const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>(() => {
     if (!image?.env_vars) return []
@@ -395,7 +397,7 @@ function ImageFormModal({
     }
     setOpen(false)
     if (mode === "create") {
-      setForm({ name: "", display_name: "", image: "", ports: "" })
+      setForm({ name: "", display_name: "", image: "", ports: "", before_script: "" })
       setEnvVars([])
     }
     onDone()
@@ -461,6 +463,17 @@ function ImageFormModal({
             onChange={(e) => setForm({ ...form, ports: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">逗号分隔的端口号，容器创建时会自动映射到宿主机随机端口</p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Label htmlFor="img-before-script">Before Script</Label>
+          <textarea
+            id="img-before-script"
+            value={form.before_script}
+            onChange={(e) => setForm({ ...form, before_script: e.target.value })}
+            className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
+            placeholder="#!/bin/bash&#10;npm install"
+          />
+          <p className="text-xs text-muted-foreground">容器启动并 clone 代码后执行此脚本</p>
         </div>
         <div className="flex flex-col gap-3">
           <Label>环境变量</Label>

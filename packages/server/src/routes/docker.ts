@@ -8,16 +8,12 @@ const docker = new Docker();
 
 export const dockerRouter = Router();
 
-const MANAGED_LABEL = "managed-by";
-const MANAGED_VALUE = "review-service";
-
 export interface DockerImageInfo {
   id: string;
   name: string;
   tag: string;
   size: number;
   created: number;
-  managed: boolean;
 }
 
 // --- List images ---
@@ -32,8 +28,6 @@ dockerRouter.get("/images", async (_req, res) => {
       if (tags.length === 0 || (tags.length === 1 && tags[0] === "<none>:<none>")) {
         continue; // skip dangling
       }
-      const labels = img.Labels || {};
-      const managed = labels[MANAGED_LABEL] === MANAGED_VALUE;
 
       for (const tag of tags) {
         if (tag === "<none>:<none>") continue;
@@ -44,7 +38,6 @@ dockerRouter.get("/images", async (_req, res) => {
           tag: tagName || "latest",
           size: img.Size,
           created: img.Created,
-          managed,
         });
       }
     }
@@ -64,14 +57,6 @@ dockerRouter.delete("/images/:id", async (req, res) => {
 
   try {
     const image = docker.getImage(imageId);
-    const info = await image.inspect();
-
-    // Check if managed
-    const labels = info.Config?.Labels || {};
-    if (labels[MANAGED_LABEL] !== MANAGED_VALUE) {
-      res.status(403).json({ error: "Cannot delete external images" });
-      return;
-    }
 
     // Try to remove
     await image.remove();
@@ -91,27 +76,15 @@ dockerRouter.delete("/images/:id", async (req, res) => {
   }
 });
 
-import { generateDockerfile, getEntrypointScript, isValidTemplate, getAvailableTemplates } from "../services/image-templates.js";
 import { Readable } from "node:stream";
-
-// --- Get available templates ---
-
-dockerRouter.get("/templates", (_req, res) => {
-  res.json(getAvailableTemplates());
-});
 
 // --- Build image (SSE) ---
 
 dockerRouter.post("/build", async (req, res) => {
-  const { tool, runtime, name, tag } = req.body;
+  const { dockerfile, name, tag } = req.body;
 
-  if (!tool || !runtime || !name) {
-    res.status(400).json({ error: "Missing required fields: tool, runtime, name" });
-    return;
-  }
-
-  if (!isValidTemplate(tool, runtime)) {
-    res.status(400).json({ error: `Invalid template combination: tool=${tool}, runtime=${runtime}` });
+  if (!dockerfile || !name) {
+    res.status(400).json({ error: "Missing required fields: dockerfile, name" });
     return;
   }
 
@@ -130,18 +103,12 @@ dockerRouter.post("/build", async (req, res) => {
   };
 
   try {
-    sendEvent("log", { message: `Generating Dockerfile for ${tool} + ${runtime}...` });
+    sendEvent("log", { message: `Building image ${imageName}...` });
 
-    const dockerfile = generateDockerfile(tool, runtime);
-    const entrypoint = getEntrypointScript();
-
-    // Create tar stream as build context
+    // Create tar stream with user-provided Dockerfile
     const tarStream = createTarStream({
       "Dockerfile": dockerfile,
-      "entrypoint.sh": entrypoint,
     });
-
-    sendEvent("log", { message: `Building image ${imageName}...` });
 
     const buildStream = await docker.buildImage(tarStream, {
       t: imageName,

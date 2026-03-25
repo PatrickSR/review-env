@@ -7,7 +7,6 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -41,7 +40,6 @@ interface DockerImage {
   tag: string
   size: number
   created: number
-  managed: boolean
 }
 
 function formatSize(bytes: number): string {
@@ -121,7 +119,6 @@ export function Images() {
       header: "镜像名称",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          {row.original.managed && <Badge variant="outline" className="text-xs">review</Badge>}
           <span>{row.original.name}</span>
         </div>
       ),
@@ -160,18 +157,14 @@ export function Images() {
                 <PlayIcon />
                 测试运行
               </DropdownMenuItem>
-              {row.original.managed && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() => setDeleteTarget(row.original)}
-                  >
-                    <Trash2Icon />
-                    删除
-                  </DropdownMenuItem>
-                </>
-              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => setDeleteTarget(row.original)}
+              >
+                <Trash2Icon />
+                删除
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

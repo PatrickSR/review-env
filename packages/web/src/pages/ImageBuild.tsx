@@ -12,31 +12,27 @@ import {
 } from "@/components/ui/card"
 import { ArrowLeftIcon, HammerIcon, CheckCircleIcon, XCircleIcon } from "lucide-react"
 
-const TOOLS = [
-  { id: "claude-code", label: "Claude Code", description: "Anthropic AI 编码助手" },
-]
+const DEFAULT_DOCKERFILE = `FROM ghcr.io/patricksr/review-base:latest
 
-const RUNTIMES = [
-  { id: "node", label: "Node", description: "node:22" },
-  { id: "python", label: "Python", description: "python:3.12" },
-]
+# Install Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \\
+    apt-get install -y nodejs && \\
+    rm -rf /var/lib/apt/lists/*
+
+# Install Claude Code
+RUN npm install -g @anthropic-ai/claude-code
+`
 
 type BuildState = "idle" | "building" | "success" | "error"
 
 export function ImageBuild() {
   const navigate = useNavigate()
-  const [tool, setTool] = useState("claude-code")
-  const [runtime, setRuntime] = useState("node")
-  const [name, setName] = useState("claude-code-node")
+  const [dockerfile, setDockerfile] = useState(DEFAULT_DOCKERFILE)
+  const [name, setName] = useState("my-review-image")
   const [tag, setTag] = useState("latest")
   const [buildState, setBuildState] = useState<BuildState>("idle")
   const [logs, setLogs] = useState<string[]>([])
   const logRef = useRef<HTMLDivElement>(null)
-
-  // Auto-generate name when tool/runtime changes
-  useEffect(() => {
-    setName(`${tool}-${runtime}`)
-  }, [tool, runtime])
 
   // Auto-scroll logs
   useEffect(() => {
@@ -53,7 +49,7 @@ export function ImageBuild() {
       const res = await fetch("/api/docker/build", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool, runtime, name, tag }),
+        body: JSON.stringify({ dockerfile, name, tag }),
       })
 
       if (!res.ok || !res.body) {
@@ -94,7 +90,6 @@ export function ImageBuild() {
         }
       }
 
-      // If stream ended without explicit complete/error event, assume success
       setBuildState((prev) => prev === "building" ? "success" : prev)
     } catch {
       setBuildState("error")
@@ -115,47 +110,16 @@ export function ImageBuild() {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>AI 工具</CardTitle>
-              <CardDescription>选择要安装的 AI 编码工具</CardDescription>
+              <CardTitle>Dockerfile</CardTitle>
+              <CardDescription>编写或粘贴 Dockerfile 内容，基于 review-base 镜像扩展</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-3">
-                {TOOLS.map((t) => (
-                  <div
-                    key={t.id}
-                    className={`cursor-pointer rounded-lg border p-4 min-w-[160px] transition-colors ${
-                      tool === t.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                    }`}
-                    onClick={() => setTool(t.id)}
-                  >
-                    <div className="font-medium">{t.label}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{t.description}</div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>运行环境</CardTitle>
-              <CardDescription>选择容器的基础运行环境</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3">
-                {RUNTIMES.map((r) => (
-                  <div
-                    key={r.id}
-                    className={`cursor-pointer rounded-lg border p-4 min-w-[160px] transition-colors ${
-                      runtime === r.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                    }`}
-                    onClick={() => setRuntime(r.id)}
-                  >
-                    <div className="font-medium">{r.label}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{r.description}</div>
-                  </div>
-                ))}
-              </div>
+              <textarea
+                value={dockerfile}
+                onChange={(e) => setDockerfile(e.target.value)}
+                className="flex min-h-[300px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
+                placeholder="FROM ghcr.io/patricksr/review-base:latest"
+              />
             </CardContent>
           </Card>
 
@@ -177,7 +141,7 @@ export function ImageBuild() {
             </CardContent>
           </Card>
 
-          <Button className="self-start" onClick={startBuild} disabled={!name}>
+          <Button className="self-start" onClick={startBuild} disabled={!name || !dockerfile.trim()}>
             <HammerIcon className="size-4 mr-1" />
             开始构建
           </Button>

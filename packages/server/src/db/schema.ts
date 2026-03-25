@@ -16,6 +16,16 @@ export function createTables(db: Database.Database): void {
     db.prepare("INSERT OR IGNORE INTO _migrations (name) VALUES (?)").run("add_project_images_ports");
   }
 
+  const hasBeforeScriptMigration = db.prepare("SELECT 1 FROM _migrations WHERE name = ?").get("add_project_images_before_script");
+  if (!hasBeforeScriptMigration) {
+    try {
+      db.exec(`ALTER TABLE project_images ADD COLUMN before_script TEXT NOT NULL DEFAULT ''`);
+    } catch {
+      // Column may already exist from fresh CREATE TABLE
+    }
+    db.prepare("INSERT OR IGNORE INTO _migrations (name) VALUES (?)").run("add_project_images_before_script");
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +50,7 @@ export function createTables(db: Database.Database): void {
       sort_order      INTEGER NOT NULL DEFAULT 0,
       enabled         INTEGER NOT NULL DEFAULT 1,
       ports           TEXT NOT NULL DEFAULT '',
+      before_script   TEXT NOT NULL DEFAULT '',
       UNIQUE(project_id, name)
     );
 

@@ -96,6 +96,12 @@ export const dockerManager = {
       ...Object.entries(extraEnvVars).map(([k, v]) => `${k}=${v}`),
     ];
 
+    // Pass before_script as base64-encoded env var if non-empty
+    if (imageConfig.before_script) {
+      const encoded = Buffer.from(imageConfig.before_script).toString("base64");
+      envList.push(`BEFORE_SCRIPT=${encoded}`);
+    }
+
     // ttyd (7681) mapped to random host port
     const exposedPorts: Record<string, object> = { "7681/tcp": {} };
     const portBindings: Record<string, object[]> = {
@@ -222,7 +228,7 @@ export const dockerManager = {
       if (cleaned.startsWith("error")) {
         return { status: "error", message: cleaned, image_id: record.image_id, display_name: imageConfig?.display_name };
       }
-      if (cleaned === "cloning" || cleaned === "installing") {
+      if (cleaned === "cloning" || cleaned === "initializing") {
         return { status: "initializing", message: cleaned, image_id: record.image_id, display_name: imageConfig?.display_name };
       }
       return { status: "creating", image_id: record.image_id, display_name: imageConfig?.display_name };
