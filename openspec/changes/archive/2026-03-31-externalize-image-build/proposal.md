@@ -4,8 +4,8 @@
 
 ## 变更内容
 
-- 新增 `review-base` 基础镜像（基于 ubuntu:24.04），仅包含 git、ttyd、curl、bash 和 entrypoint.sh，不绑定任何语言运行时或 AI 工具
-- 改造 entrypoint.sh：支持通过环境变量 `BEFORE_SCRIPT`（base64 编码）传入用户自定义初始化脚本，在 clone 后、ready 前执行；ttyd 启动时检测 `$SHELL`；before_script 失败时写 error 但 ttyd 照样启动
+- 新增 `review-base` 基础镜像（基于 ubuntu:24.04），仅包含 git、code-server、curl、bash 和 entrypoint.sh，不绑定任何语言运行时或 AI 工具
+- 改造 entrypoint.sh：支持通过环境变量 `BEFORE_SCRIPT`（base64 编码）传入用户自定义初始化脚本，在 clone 后、ready 前执行；before_script 失败时写 error 但 code-server 照样启动
 - 改造 `/images/build` 页面：从"选择模板"改为"编写/粘贴 Dockerfile"，预填可直接构建的示例 Dockerfile
 - 改造 `POST /api/docker/build` API：从接收 `tool + runtime` 改为接收用户提供的 `dockerfile` 内容
 - **BREAKING** 删除 Dockerfile 模板系统（`image-templates.ts`、`GET /api/docker/templates`）
@@ -24,14 +24,14 @@
 ## 功能 (Capabilities)
 
 ### 新增功能
-- `review-base-image`: review-base 基础镜像定义（Dockerfile.base + entrypoint.sh），包含 git、ttyd、curl、before_script hook 机制，发布到 ghcr.io
+- `review-base-image`: review-base 基础镜像定义（Dockerfile.base + entrypoint.sh），包含 git、code-server、curl、before_script hook 机制，发布到 ghcr.io
 - `dockerfile-build`: 用户自定义 Dockerfile 构建功能，替代原有模板构建，用户在 UI 中编写 Dockerfile 并通过 SSE 实时查看构建日志
 
 ### 修改功能
 - `image-builder`: 构建 API 从模板驱动改为接收用户 Dockerfile 内容，删除模板系统
 - `image-registry`: 去掉 managed-by label 区分逻辑，所有镜像均可删除
 - `multi-image`: 添加镜像表单新增 before_script textarea 字段
-- `review-image`: entrypoint 重写，支持 before_script 环境变量和 $SHELL 检测，基础镜像从 node:22 改为 review-base
+- `review-image`: entrypoint 重写，支持 before_script 环境变量，基础镜像从 node:22 改为 review-base
 - `ci-docker-publish`: CI workflow 新增 review-base 镜像构建 job
 
 ## 影响

@@ -1,7 +1,7 @@
 ## 1. review-base 基础镜像
 
-- [x] 1.1 创建 `docker/entrypoint.sh`：实现 clone → before_script → ttyd 启动流程，支持 BEFORE_SCRIPT 环境变量（base64 解码执行）、$SHELL 检测、失败时写 error 但 ttyd 照样启动
-- [x] 1.2 创建 `docker/Dockerfile.base`：基于 ubuntu:24.04，安装 git、curl、ttyd，COPY entrypoint.sh，设置 ENTRYPOINT
+- [x] 1.1 创建 `docker/entrypoint.sh`：实现 clone → before_script → code-server 启动流程，支持 BEFORE_SCRIPT 环境变量（base64 解码执行）、失败时写 error 但 code-server 照样启动
+- [x] 1.2 创建 `docker/Dockerfile.base`：基于 ubuntu:24.04，安装 git、curl、code-server，COPY entrypoint.sh，设置 ENTRYPOINT
 
 ## 2. 后端：删除模板系统
 
