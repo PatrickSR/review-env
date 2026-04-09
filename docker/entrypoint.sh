@@ -12,6 +12,8 @@ start_ide() {
     --bind-addr 0.0.0.0:8080 \
     --auth none \
     --disable-telemetry \
+    --disable-workspace-trust \
+    --disable-getting-started-override \
     /workspace &
 }
 

@@ -1,0 +1,17 @@
+{
+  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.startupEditor": "none",
+  "workbench.welcomePage.walkthroughs.openOnInstall": false,
+  "security.workspace.trust.enabled": false,
+  "extensions.ignoreRecommendations": true,
+  "extensions.autoCheckUpdates": false,
+  "extensions.autoUpdate": false,
+  "github.copilot.enable": { "*": false },
+  "github.copilot.chat.enabled": false,
+  "chat.commandCenter.enabled": false,
+  "chat.disableAIFeatures": true,
+  "git.githubAuthentication": false,
+  "git.terminalAuthentication": false,
+  "update.showReleaseNotes": false,
+  "telemetry.telemetryLevel": "off"
+}
