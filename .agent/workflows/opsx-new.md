@@ -1,23 +1,16 @@
 ---
-name: openspec-new-change
-description: 使用实验性的产出物工作流启动一个新的 OpenSpec 变更。当用户想要通过结构化的分步方法创建新功能、修复或修改时使用。
-license: MIT
-compatibility: 需要 openspec CLI。
-metadata:
-  author: openspec
-  version: "1.0"
-  generatedBy: "1.2.0-2"
+description: 使用实验性的产出物工作流 (OPSX) 启动新变更
 ---
 
 使用实验性的产出物驱动方法启动新变更。
 
-**输入**：用户的请求应当包含变更名称（kebab-case）或对想要构建内容的描述。
+**输入**：`/opsx:new` 之后的参数是变更名称（kebab-case），或用户想要构建内容的描述。
 
 **步骤**
 
-1. **如果没有提供明确的输入，询问用户想要构建什么**
+1. **如果没有提供输入，询问他们想要构建什么**
 
-   使用 **AskUserQuestion Tool**（开放式，无预设选项）询问：
+   使用 **AskUserQuestion tool**（开放式，无预设选项）询问：
    > "您想要处理什么变更？请描述您想要构建或修复的内容。"
 
    根据他们的描述，推导出一个 kebab-case 名称（例如："add user authentication" → `add-user-auth`）。
@@ -48,8 +41,7 @@ metadata:
    这会显示哪些产出物需要创建，以及哪些已就绪（依赖项已满足）。
 
 5. **获取第一个产出物的指令**
-   第一个产出物取决于所使用的 schema（例如：spec-driven 通常先生成 `proposal`）。
-   检查 status 输出，找到第一个状态为 "ready" 的产出物。
+   第一个产出物取决于 Schema。检查状态输出，找到第一个状态为 "ready" 的产出物。
    ```bash
    openspec-cn instructions <first-artifact-id> --change "<name>"
    ```
@@ -64,12 +56,11 @@ metadata:
 - 正在使用的 Schema/工作流及其产出物顺序
 - 当前状态（0/N 个产出物已完成）
 - 第一个产出物的模板
-- 提示："准备好创建第一个产出物了吗？请描述此变更的内容，我将为您起草，或者要求我继续。"
+- 提示："准备好创建第一个产出物了吗？运行 `/opsx:continue` 或描述此变更的内容，我将为您起草。"
 
 **护栏**
-
 - 不要立即创建任何产出物 —— 仅显示指令
 - 不要跳过显示第一个产出物模板的步骤
 - 如果名称无效（非 kebab-case），请求有效的名称
-- 如果同名变更已存在，建议继续处理该变更
+- 如果同名变更已存在，建议使用 `/opsx:continue` 代替
 - 如果使用非默认工作流，请传递 --schema

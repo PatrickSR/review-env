@@ -1,12 +1,5 @@
 ---
-name: openspec-onboard
-description: OpenSpec 引导式入门 - 通过讲解与在真实代码库中动手，走完一个完整的工作流周期。
-license: MIT
-compatibility: 需要 openspec CLI。
-metadata:
-  author: openspec
-  version: "1.0"
-  generatedBy: "1.2.0-2"
+description: 引导式入门 - 通过完整的OpenSpec工作流周期进行讲解
 ---
 
 引导用户完成他们的第一个完整OpenSpec工作流周期。这是一个教学体验——你将在他们的代码库中完成实际工作，同时解释每个步骤。

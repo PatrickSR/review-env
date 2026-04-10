@@ -1,17 +1,10 @@
 ---
-name: openspec-verify-change
-description: 验证实现是否与变更产出物匹配。当用户想要在归档前验证实现是否完整、正确且一致时使用。
-license: MIT
-compatibility: 需要 openspec CLI。
-metadata:
-  author: openspec
-  version: "1.0"
-  generatedBy: "1.2.0-2"
+description: 在归档前验证实现是否与变更产出物匹配
 ---
 
 验证实现是否与变更产出物（规范、任务、设计）匹配。
 
-**输入**：可选指定变更名称。如果省略，检查是否可以从对话上下文中推断。如果模糊或不明确，你**必须**提示获取可用变更。
+**输入**：可选择在 `/opsx:verify` 后指定变更名称（例如，`/opsx:verify add-auth`）。如果省略，检查是否可以从对话上下文中推断出来。如果模糊或不明确，你必须提示可用的变更。
 
 **步骤**
 

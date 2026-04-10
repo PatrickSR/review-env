@@ -1,17 +1,10 @@
 ---
-name: openspec-apply-change
-description: 实现 OpenSpec 变更中的任务。当用户想要开始实现、继续实现或处理任务时使用。
-license: MIT
-compatibility: 需要 openspec CLI。
-metadata:
-  author: openspec
-  version: "1.0"
-  generatedBy: "1.2.0-2"
+description: 实现 OpenSpec 变更中的任务（实验性）
 ---
 
 实现 OpenSpec 变更中的任务。
 
-**输入**：可选指定变更名称。如果省略，检查是否可以从对话上下文中推断。如果模糊或不明确，你**必须**提示获取可用变更。
+**输入**：可选择指定变更名称（例如，`/opsx:apply add-auth`）。如果省略，检查是否可以从对话上下文中推断出来。如果模糊或不明确，你必须提示可用的变更。
 
 **步骤**
 
@@ -39,13 +32,13 @@ metadata:
    ```
 
    这返回：
-   - 上下文文件路径（因 Schema 而异 - 可能是 proposal/specs/design/tasks 或 spec/tests/implementation/docs）
+   - 上下文文件路径（因 Schema 而异）
    - 进度（总计，完成，剩余）
    - 带有状态的任务列表
    - 基于当前状态的动态指令
 
    **处理状态：**
-   - 如果 `state: "blocked"`（缺少产出物）：显示消息，建议使用 openspec-continue-change
+   - 如果 `state: "blocked"`（缺少产出物）：显示消息，建议使用 `/opsx:continue`
    - 如果 `state: "all_done"`：祝贺，建议归档
    - 否则：继续实现
 
@@ -115,7 +108,7 @@ metadata:
 - [x] 任务 2
 ...
 
-所有任务已完成！准备归档此变更。
+所有任务已完成！您可以使用 `/opsx:archive` 归档此变更。
 ```
 
 **暂停时的输出（遇到问题）**
